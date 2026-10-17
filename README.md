@@ -36,11 +36,17 @@ the part that actually answers the question (for example "narrow habitat, food, 
 The same phrases are highlighted in the "Answer C: …" line and in the "Read these once before the loop" review list.
 After a correct answer the app waits 3 seconds before jumping to the next question. Highlighting can be turned off in settings.
 
+## Looking back
+
+If the automatic jump moves on before you have read the highlighted answer, tap **← Back** (or press `←`).
+The previous question appears again, answered, with its key phrases highlighted and marked "not scored". You can step back up to 20 questions.
+The current question's clock is frozen while you look back. **Back to current question** (or `→` / `Enter`) continues it from where it was. Nothing you do while looking back changes your score.
+
 Clicking an answer turns it green if it is right or red if it is wrong, and the correct answer is shown straight away.
 The progress bar tracks the current loop. Answer options are shuffled too, so you learn the answer and not its position. You can turn this off.
 Progress and any unfinished session are saved in the browser's localStorage.
 
-Keyboard: `1`–`4` or `A`–`D` to answer, `Enter` for the next question, `P` to pause or resume.
+Keyboard: `1`–`4` or `A`–`D` to answer, `Enter` for the next question, `P` to pause or resume, `←` to look back.
 
 ## Editing questions
 

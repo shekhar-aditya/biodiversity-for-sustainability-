@@ -384,6 +384,9 @@ mark.kw {
 .feedback.late { background: var(--wrong-soft); }
 .feedback.late strong { color: var(--warn); }
 @keyframes blink { 50% { opacity: .5; } }
+.chip.review { color: var(--accent); background: var(--accent-soft); }
+.btn-back { flex: none; min-height: 52px; padding-inline: 18px; }
+.btn-back:disabled { opacity: .45; cursor: default; }
 .chip.slow { color: var(--warn); background: var(--bg); box-shadow: inset 0 0 0 1px var(--warn); }
 
 /* Time-per-question lists */
@@ -545,9 +548,10 @@ mark.kw {
   </article>
 
   <div class="actionbar">
+    <button id="back" class="btn btn-back" type="button" hidden aria-label="Look at the previous question">← Back</button>
     <button id="next" class="btn btn-primary" type="button" disabled>Choose an answer</button>
   </div>
-  <p class="hint">Keys: 1–4 or A–D to answer · Enter for next · P to pause</p>
+  <p class="hint">Keys: 1–4 or A–D to answer · Enter for next · ← to look back · P to pause</p>
 </main>
 
 <!-- LOOP SUMMARY -->
@@ -1056,6 +1060,7 @@ function normalize(s) {
   s.loopMs = s.loopMs || 0;
   s.loopTimes = s.loopTimes || {};
   s.firstTimes = s.firstTimes || {};
+  s.past = s.past || [];
   s.history.forEach(h => { h.ms = h.ms || 0; });
   return s;
 }
@@ -1243,6 +1248,7 @@ function renderHome() {
 
 /* ---------- live timer ---------- */
 let advanceTimer = null, tickTimer = null, qStart = 0, frozenAt = 0, paused = false;
+let reviewing = -1; // how many steps back the user is looking; -1 = on the live question
 const elapsed = () => (frozenAt || performance.now()) - qStart;
 // Freezing stops the question clock; thawing shifts its start so frozen time never counts.
 function freeze() { if (!frozenAt) frozenAt = performance.now(); }
@@ -1289,7 +1295,7 @@ function paintTimer(e) {
 }
 // Switching tabs or locking the phone also stops the clock.
 document.addEventListener("visibilitychange", () => {
-  if (!tickTimer || paused) return;
+  if (!tickTimer || paused || reviewing >= 0) return;
   if (document.hidden) freeze(); else thaw();
 });
 
@@ -1313,9 +1319,9 @@ function pauseQuiz() {
 function resumeQuiz() {
   if (!paused) return;
   paused = false;
-  if (tickTimer) thaw();
+  if (tickTimer && reviewing < 0) thaw();
   $("quiz").classList.remove("is-paused");
-  $("timer").classList.remove("paused");
+  if (reviewing < 0) $("timer").classList.remove("paused");
   const b = $("pause");
   b.textContent = "Pause";
   b.setAttribute("aria-pressed", "false");
@@ -1348,13 +1354,15 @@ function startSession(scope, week, ids) {
     answers: 0,
     history: [],
     ms: 0, loopMs: 0, loopTimes: {}, firstTimes: {},
+    past: [], // recently answered questions, for looking back
     order: null, orderFor: null, picked: null
   };
   save();
   renderQuestion();
 }
 
-function renderQuestion() {
+// keepClock: coming back from looking back, so continue this question's clock instead of restarting it.
+function renderQuestion(keepClock) {
   const s = store.session;
   const q = byId.get(s.queue[s.index]);
   if (s.orderFor !== q.id) {
@@ -1370,14 +1378,34 @@ function renderQuestion() {
   $("scope-label").textContent = scopeName(s);
 
   const p = pace(q.id);
-  $("qmeta").replaceChildren(...[
+  drawQuestion(q, s.order, [
     el("span", { class: "chip" }, q.week),
     s.loop > 1 ? el("span", { class: "chip warn" }, "Missed before") : null,
     p !== null && p >= SLOW_MS ? el("span", { class: "chip slow" }, "Slow last time · " + fmtS(p)) : null,
     weekNum(q) === 12 ? el("span", { class: "chip" }, "Unofficial answer") : null
-  ].filter(Boolean));
+  ]);
+  updateProgress();
+  show("quiz");
+  updateBack();
+
+  if (s.picked !== null) { // resumed after answering this one
+    stopTimer();
+    paintAnswer(false);
+    paintTimer(s.loopTimes[q.id] ? s.loopTimes[q.id].ms : 0);
+  } else if (keepClock && tickTimer) {
+    setNext(false);
+    thaw();
+    paintTimer(elapsed());
+  } else {
+    setNext(false);
+    startTimer();
+  }
+}
+
+function drawQuestion(q, order, chips) {
+  $("qmeta").replaceChildren(...chips.filter(Boolean));
   $("qtext").textContent = q.question;
-  $("options").replaceChildren(...s.order.map((optIdx, i) => el("li", null,
+  $("options").replaceChildren(...order.map((optIdx, i) => el("li", null,
     el("button", { class: "opt", type: "button", "data-i": i, onclick: () => answer(i) },
       el("span", { class: "key" }, LETTERS[i]),
       el("span", { class: "txt" }, q.options[optIdx])
@@ -1385,17 +1413,6 @@ function renderQuestion() {
   )));
   $("feedback").hidden = true;
   $("feedback").replaceChildren();
-  updateProgress();
-  show("quiz");
-
-  if (s.picked !== null) { // resumed after answering this one
-    stopTimer();
-    paintAnswer(false);
-    paintTimer(s.loopTimes[q.id] ? s.loopTimes[q.id].ms : 0);
-  } else {
-    setNext(false);
-    startTimer();
-  }
 }
 
 function updateProgress() {
@@ -1421,7 +1438,7 @@ function setNext(ready) {
 
 function answer(i) {
   const s = store.session;
-  if (!s || s.phase !== "quiz" || s.picked !== null || paused) return;
+  if (!s || s.phase !== "quiz" || s.picked !== null || paused || reviewing >= 0) return;
   const q = byId.get(s.queue[s.index]);
   const ms = elapsed();
   stopTimer();
@@ -1458,36 +1475,77 @@ function settle(q, picked, right, ms) {
 function paintAnswer(fresh) {
   const s = store.session;
   const q = byId.get(s.queue[s.index]);
-  const rightPos = s.order.indexOf(q.answer);
-  const correct = s.picked === rightPos;
-  const rec = s.loopTimes[q.id];
+  const { correct, late } = drawAnswered(q, s.order, s.picked, s.loopTimes[q.id], s.limit, fresh);
+  updateProgress();
+  setNext(true);
+  if (fresh && (late || !correct)) $("next").focus({ preventScroll: true });
+}
+
+// Colours the options, marks the right answer's key phrases and writes the feedback line.
+function drawAnswered(q, order, picked, rec, limit, fresh) {
+  const rightPos = order.indexOf(q.answer);
+  const correct = picked === rightPos;
   const late = !!(rec && rec.late);
   [...$("options").querySelectorAll(".opt")].forEach((b, i) => {
     b.disabled = true;
     if (i === rightPos) { b.classList.add("is-right"); b.querySelector(".txt").replaceChildren(answerText(q)); }
-    else if (i === s.picked) b.classList.add("is-wrong");
+    else if (i === picked) b.classList.add("is-wrong");
     else b.classList.add("is-dim");
-    if (i === s.picked && fresh) b.classList.add("picked");
+    if (i === picked && fresh) b.classList.add("picked");
   });
   const took = rec ? " · " + fmtS(rec.ms) : "";
   const fb = $("feedback");
   fb.className = "feedback " + (late ? "late" : correct ? "ok" : "no");
   fb.replaceChildren(...[
     el("strong", null, (late ? "Right, but too slow" : correct ? "Correct" : "Not this one") + took),
-    late ? document.createTextNode("Over the " + s.limit / 1000 + " s limit, so it is not counted as correct. It comes back in the next loop.")
+    late ? document.createTextNode("Over the " + limit / 1000 + " s limit, so it is not counted as correct. It comes back in the next loop.")
       : correct ? null
       : el("span", null, "Answer " + LETTERS[rightPos] + ": ", answerText(q), ". It comes back in the next loop.")
   ].filter(Boolean));
   fb.hidden = false;
-  updateProgress();
-  setNext(true);
-  if (fresh && (late || !correct)) $("next").focus({ preventScroll: true });
+  return { correct, late };
+}
+
+/* ---------- looking back ----------
+   Shows recently answered questions again, read-only, so a highlight skipped by the
+   automatic jump can still be read. The live question's clock is frozen meanwhile. */
+function goBack() {
+  const s = store.session;
+  if (!s || paused || reviewing + 1 >= s.past.length) return;
+  clearTimeout(advanceTimer);
+  if (reviewing < 0 && tickTimer) freeze();
+  reviewing++;
+  const p = s.past[s.past.length - 1 - reviewing], q = byId.get(p.id);
+  drawQuestion(q, p.order, [
+    el("span", { class: "chip" }, q.week),
+    el("span", { class: "chip review" }, reviewing === 0 ? "Previous question · not scored" : (reviewing + 1) + " questions back · not scored")
+  ]);
+  drawAnswered(q, p.order, p.picked, p.rec, p.limit, false);
+  $("timer").classList.add("paused");
+  const b = $("next");
+  b.disabled = false;
+  b.textContent = "Back to current question";
+  updateBack();
+  window.scrollTo(0, 0);
+}
+function leaveReview() {
+  if (reviewing < 0) return;
+  reviewing = -1;
+  $("timer").classList.remove("paused");
+  renderQuestion(true);
+}
+function updateBack() {
+  const s = store.session, b = $("back");
+  b.hidden = !s || !s.past.length;
+  b.disabled = !s || reviewing + 1 >= s.past.length;
 }
 
 function next() {
   clearTimeout(advanceTimer);
   const s = store.session;
-  if (!s || s.phase !== "quiz" || s.picked === null || paused) return;
+  if (!s || s.phase !== "quiz" || s.picked === null || paused || reviewing >= 0) return;
+  const q = byId.get(s.queue[s.index]);
+  s.past = s.past.concat({ id: q.id, order: s.order, picked: s.picked, rec: s.loopTimes[q.id], limit: s.limit }).slice(-20);
   s.index++;
   s.picked = null;
   s.orderFor = null;
@@ -1630,6 +1688,8 @@ function resume() {
 
 function exitToHome() {
   clearTimeout(advanceTimer);
+  reviewing = -1;
+  $("timer").classList.remove("paused");
   resumeQuiz();
   stopTimer();
   save();
@@ -1637,7 +1697,8 @@ function exitToHome() {
 }
 
 /* ---------- wiring ---------- */
-$("next").addEventListener("click", next);
+$("next").addEventListener("click", () => reviewing >= 0 ? leaveReview() : next());
+$("back").addEventListener("click", goBack);
 $("pause").addEventListener("click", togglePause);
 $("pause-resume").addEventListener("click", resumeQuiz);
 $("exit").addEventListener("click", exitToHome);
@@ -1673,6 +1734,11 @@ document.addEventListener("keydown", e => {
   if (!$("quiz").hidden) {
     if (k === "p" || (paused && (k === "enter" || k === " "))) { e.preventDefault(); togglePause(); return; }
     if (paused) return;
+    if (k === "arrowleft" || k === "b") { e.preventDefault(); goBack(); return; }
+    if (reviewing >= 0) {
+      if (k === "enter" || k === " " || k === "arrowright") { e.preventDefault(); leaveReview(); }
+      return;
+    }
     const i = "1234".indexOf(k) >= 0 ? "1234".indexOf(k) : "abcd".indexOf(k);
     if (k.length === 1 && i >= 0) { e.preventDefault(); answer(i); return; }
     if ((k === "enter" || k === " " || k === "arrowright") && store.session && store.session.picked !== null) {
