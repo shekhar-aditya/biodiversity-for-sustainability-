@@ -24,6 +24,7 @@
   --right-soft: #dcf2e3;
   --wrong: #c2372b;
   --wrong-soft: #fae2df;
+  --warn: #a5620a;
   --on-solid: #ffffff;
   --shadow: 0 1px 2px rgba(15, 31, 24, .06), 0 6px 20px rgba(15, 31, 24, .06);
   --font-ui: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -41,7 +42,7 @@
   :root:not([data-theme="light"]) {
     --bg: #0d1814; --bg-glow: #13261e; --surface: #15231d; --ink: #e6f0eb; --muted: #a2b5ab;
     --line: #2a3d35; --accent: #62c6a5; --accent-ink: #062219; --accent-soft: #1b392f;
-    --right: #23864e; --right-soft: #143322; --wrong: #c84336; --wrong-soft: #3b1c19;
+    --right: #23864e; --right-soft: #143322; --wrong: #c84336; --wrong-soft: #3b1c19; --warn: #e3a447;
     --on-solid: #ffffff; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
     color-scheme: dark;
   }
@@ -49,7 +50,7 @@
 :root[data-theme="dark"] {
   --bg: #0d1814; --bg-glow: #13261e; --surface: #15231d; --ink: #e6f0eb; --muted: #a2b5ab;
   --line: #2a3d35; --accent: #62c6a5; --accent-ink: #062219; --accent-soft: #1b392f;
-  --right: #23864e; --right-soft: #143322; --wrong: #c84336; --wrong-soft: #3b1c19;
+  --right: #23864e; --right-soft: #143322; --wrong: #c84336; --wrong-soft: #3b1c19; --warn: #e3a447;
   --on-solid: #ffffff; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
   color-scheme: dark;
 }
@@ -307,9 +308,9 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
 .missed .ma { color: var(--right); font-weight: 700; }
 :root[data-theme="dark"] .missed .ma { color: #7fd9a3; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .missed .ma { color: #7fd9a3; } }
-.missed .mw { font-size: var(--step--1); color: var(--muted); }
+.mw { display: block; font-size: var(--step--1); color: var(--muted); }
 
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .stat { background: var(--bg); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; }
 .stat b { font-size: var(--step-3); font-family: var(--font-read); line-height: 1.1; font-variant-numeric: tabular-nums; }
 .stat span { font-size: var(--step--1); color: var(--muted); }
@@ -320,7 +321,52 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
 :root[data-theme="dark"] .burst { color: #7fd9a3; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .burst { color: #7fd9a3; } }
 
+/* Timer tile */
+.timer {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius);
+  padding: 10px 16px; transition: border-color .2s;
+}
+.tclock { display: flex; flex-direction: column; gap: 3px; min-width: 76px; }
+.tclock.right { text-align: right; }
+.tlabel { font-size: .6875rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tclock b { font-family: var(--font-read); font-size: var(--step-3); line-height: 1; font-variant-numeric: tabular-nums; }
+.tmid { min-width: 0; }
+.tbar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.tbar > span { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: inherit; transition: width .1s linear; }
+.tnote { display: block; text-align: center; font-size: var(--step--1); color: var(--muted); line-height: 1.3; }
+.timer.nolimit .tbar { display: none; }
+.timer:not(.nolimit) .tnote { display: none; }
+.timer.warn { border-color: var(--warn); }
+.timer.warn #t-q { color: var(--warn); }
+.timer.warn .tbar > span { background: var(--warn); }
+.timer.danger { border-color: var(--wrong); }
+.timer.danger #t-q { color: var(--wrong); }
+.timer.danger .tbar > span { background: var(--wrong); }
+.timer.danger:not(.stopped) #t-q { animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .5; } }
+.chip.slow { color: var(--warn); background: var(--bg); box-shadow: inset 0 0 0 1px var(--warn); }
+
+/* Time-per-question lists */
+.times { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.trow { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; align-items: start; }
+.tq { min-width: 0; font-size: .9375rem; line-height: 1.35; }
+.tv { font-weight: 700; font-variant-numeric: tabular-nums; padding-top: 1.2em; }
+.tv.slow { color: var(--warn); }
+.tb { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.tb > span { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+.tb.slow > span { background: var(--warn); }
+.tb.miss > span { background: var(--wrong); }
+.select {
+  margin-left: auto; font: inherit; font-weight: 700; color: var(--ink); background: var(--surface);
+  border: 1.5px solid var(--line); border-radius: 10px; padding: 6px 10px; min-height: 40px;
+}
+
 @media (max-width: 480px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .timer { gap: 10px; padding: 10px 12px; }
+  .tclock { min-width: 64px; }
+  .tclock b { font-size: 1.5rem; }
   .wrap { padding-block: 18px 28px; gap: 16px; }
   h1 { font-size: var(--step-3); }
   .card { padding: 16px; }
@@ -377,7 +423,25 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
     <ul id="weeks" class="weeks"></ul>
   </section>
 
+  <section id="slow" class="card" hidden>
+    <div class="section-head">
+      <h2>Slowest questions</h2>
+    </div>
+    <p id="slow-note" class="chain-caption"></p>
+    <ol id="slow-list" class="times"></ol>
+    <button id="slow-go" class="btn btn-primary btn-block" type="button">Drill the 20 slowest</button>
+  </section>
+
   <section class="settings" aria-label="Settings">
+    <label class="toggle" for="opt-limit">Grand Test time limit per question
+      <select id="opt-limit" class="select">
+        <option value="0">Off</option>
+        <option value="10">10 s</option>
+        <option value="15">15 s</option>
+        <option value="20">20 s</option>
+        <option value="30">30 s</option>
+      </select>
+    </label>
     <label class="toggle"><input id="opt-shuffle" type="checkbox" checked> Shuffle answer options (learn the answer, not its position)</label>
     <label class="toggle"><input id="opt-auto" type="checkbox" checked> Jump to the next question after a correct answer</label>
     <div class="foot">
@@ -403,6 +467,15 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
       <span>Question <b id="pos">1</b> of <b id="total">10</b> · <b id="pct">0%</b></span>
       <span><b id="correct-count">0</b> correct · streak <b id="streak">0</b></span>
     </div>
+  </div>
+
+  <div id="timer" class="timer nolimit" role="timer" aria-label="Question timer">
+    <div class="tclock"><span id="t-q-label" class="tlabel">This question</span><b id="t-q">0.0s</b></div>
+    <div class="tmid">
+      <div class="tbar"><span id="t-bar"></span></div>
+      <span class="tnote">No limit in weekly mode. Turns amber after 10 s.</span>
+    </div>
+    <div class="tclock right"><span class="tlabel">Loop time</span><b id="t-total">0:00</b></div>
   </div>
 
   <article class="card">
@@ -433,6 +506,7 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
       <div id="sum-chain" class="chain num"></div>
       <p class="chain-caption">Questions in each loop. The loop repeats until one comes back with zero misses.</p>
     </div>
+    <p id="sum-time" class="muted num" style="margin: 0"></p>
     <p id="sum-text" style="margin: 0"></p>
   </section>
   <div class="row">
@@ -441,6 +515,12 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
   <section class="card">
     <h3 style="font-size: var(--step-1)">Read these once before the loop</h3>
     <ul id="sum-missed" class="missed"></ul>
+  </section>
+  <section class="card">
+    <h3 style="font-size: var(--step-1)">Time per question in this loop</h3>
+    <p class="chain-caption">Slowest first. Amber is over 10 seconds, red was a miss or ran out of time.</p>
+    <ol id="sum-times" class="times"></ol>
+    <button id="sum-times-more" class="btn" type="button" hidden>Show all</button>
   </section>
 </main>
 
@@ -453,7 +533,8 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
     <div class="stats">
       <div class="stat"><b id="done-first">7/10</b><span>first try</span></div>
       <div class="stat"><b id="done-loops">3</b><span>loops run</span></div>
-      <div class="stat"><b id="done-answers">14</b><span>answers given</span></div>
+      <div class="stat"><b id="done-time">4:12</b><span>total time</span></div>
+      <div class="stat"><b id="done-avg">6.1s</b><span>per answer</span></div>
     </div>
     <p id="done-text" class="muted" style="margin: 0"></p>
   </section>
@@ -461,6 +542,12 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
     <button id="done-next" class="btn btn-primary" type="button">Next week</button>
     <button id="done-home" class="btn" type="button">All weeks</button>
   </div>
+  <section class="card">
+    <h3 style="font-size: var(--step-1)">Slowest on the first pass</h3>
+    <p class="chain-caption">Where you hesitated. These are the ones to drill again.</p>
+    <ol id="done-times" class="times"></ol>
+    <button id="done-times-more" class="btn" type="button" hidden>Show all</button>
+  </section>
 </main>
 
 <script>
@@ -750,6 +837,8 @@ const WEEK_TITLES = {
 };
 const WEEK_NUMS = Object.keys(WEEK_TITLES).map(Number);
 const LETTERS = ["A", "B", "C", "D"];
+const SLOW_MS = 10000;      // answers slower than this are flagged amber
+const SLOW_DRILL_SIZE = 20; // questions in a slow-question drill
 
 const weekNum = q => parseInt(q.week.replace(/\D+/g, ""), 10);
 const byId = new Map(questions.map(q => [q.id, q]));
@@ -761,10 +850,23 @@ function load() {
 }
 let store = load();
 store.progress = store.progress || {};
-store.prefs = Object.assign({ shuffleOptions: true, autoAdvance: true }, store.prefs || {});
-store.session = store.session || null;
+store.prefs = Object.assign({ shuffleOptions: true, autoAdvance: true, grandLimit: 20 }, store.prefs || {});
+store.times = store.times || {}; // question id -> { recent: [ms, ms, ms], best, n, timeouts }
+store.session = normalize(store.session || null);
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* keep working in memory */ }
+}
+// Sessions saved before timing existed get the new fields.
+function normalize(s) {
+  if (!s) return null;
+  s.size = s.size || s.queue.length;
+  if (s.limit == null) s.limit = s.scope === "week" ? 0 : store.prefs.grandLimit * 1000;
+  s.ms = s.ms || 0;
+  s.loopMs = s.loopMs || 0;
+  s.loopTimes = s.loopTimes || {};
+  s.firstTimes = s.firstTimes || {};
+  s.history.forEach(h => { h.ms = h.ms || 0; });
+  return s;
 }
 
 /* ---------- helpers ---------- */
@@ -787,10 +889,19 @@ function el(tag, attrs, ...kids) {
   for (const c of kids) if (c != null) n.append(c);
   return n;
 }
-const progressKey = s => s.scope === "grand" ? "grand" : "w" + s.week;
-const scopeName = s => s.scope === "grand" ? "Grand Test · all 130" : "Week " + s.week;
+const fmtS = ms => (ms / 1000).toFixed(1) + "s";
+function fmtClock(ms) {
+  const t = Math.floor(ms / 1000);
+  return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+}
+const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
+function scopeName(s) {
+  if (s.scope === "grand") return "Grand Test · all " + s.size;
+  if (s.scope === "slow") return "Slowest " + s.size + " questions";
+  return "Week " + s.week;
+}
 function loopName(s, loop) {
-  if (loop === 1) return s.scope === "grand" ? "Grand shuffle" : "Rapid fire";
+  if (loop === 1) return { grand: "Grand shuffle", slow: "Speed drill", week: "Rapid fire" }[s.scope];
   return (s.scope === "grand" ? "Final error loop " : "Error loop ") + (loop - 1);
 }
 function show(screen) {
@@ -799,8 +910,54 @@ function show(screen) {
 }
 const masteredWeeks = () => WEEK_NUMS.filter(w => store.progress["w" + w] && store.progress["w" + w].mastered);
 
+/* ---------- per-question timing ---------- */
+// Pace = average of the last 3 attempts, so it drops as a question gets learned.
+function pace(id) {
+  const t = store.times[id];
+  return t && t.recent.length ? mean(t.recent) : null;
+}
+function recordTime(id, ms, timedOut) {
+  const t = store.times[id] || (store.times[id] = { recent: [], best: null, n: 0, timeouts: 0 });
+  t.recent = t.recent.concat(Math.round(ms)).slice(-3);
+  t.n++;
+  if (timedOut) t.timeouts++;
+  else if (t.best === null || ms < t.best) t.best = Math.round(ms);
+}
+function slowest(limit) {
+  return questions
+    .map(q => ({ id: q.id, ms: pace(q.id), timeout: !!(store.times[q.id] && store.times[q.id].timeouts) }))
+    .filter(x => x.ms !== null)
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, limit);
+}
+function timeRows(entries) {
+  const max = Math.max(...entries.map(e => e.ms), 1);
+  return entries.map(e => {
+    const q = byId.get(e.id);
+    const slow = e.ms >= SLOW_MS;
+    const tag = e.timeout ? " · timed out" : e.miss ? " · missed" : "";
+    return el("li", { class: "trow" },
+      el("span", { class: "tq" }, el("span", { class: "mw" }, q.week + tag), q.question),
+      el("span", { class: "tv" + (slow ? " slow" : "") }, fmtS(e.ms)),
+      el("span", { class: "tb" + (e.miss || e.timeout ? " miss" : slow ? " slow" : "") },
+        el("span", { style: "width:" + Math.max(3, e.ms / max * 100).toFixed(1) + "%" }))
+    );
+  });
+}
+function fillTimes(listId, moreId, entries, cap) {
+  const list = $(listId), more = $(moreId);
+  list.replaceChildren(...timeRows(entries.slice(0, cap)));
+  more.hidden = entries.length <= cap;
+  more.textContent = "Show all " + entries.length;
+  more.onclick = () => { list.replaceChildren(...timeRows(entries)); more.hidden = true; };
+}
+const sortedTimes = map => Object.keys(map)
+  .map(id => Object.assign({ id: Number(id) }, map[id]))
+  .sort((a, b) => b.ms - a.ms);
+
 /* ---------- home ---------- */
 function renderHome() {
+  stopTimer();
   const s = store.session;
   const done = masteredWeeks();
   $("mastered-count").textContent = done.length;
@@ -817,29 +974,34 @@ function renderHome() {
     $("resume-label").textContent = scopeName(s) + " · " + loopName(s, s.loop);
     $("resume-detail").textContent = s.phase === "summary"
       ? s.wrongs.length + " missed, ready for the next loop"
-      : "Question " + Math.min(s.index + 1, s.queue.length) + " of " + s.queue.length;
+      : "Question " + Math.min(s.index + 1, s.queue.length) + " of " + s.queue.length + " · " + fmtClock(s.ms) + " so far";
   }
 
   // Grand test
   const all = done.length === WEEK_NUMS.length;
   const g = store.progress.grand;
+  const limitText = store.prefs.grandLimit
+    ? " " + store.prefs.grandLimit + " seconds per question; running out of time counts as a miss."
+    : " No time limit is set (change it below).";
   $("grand").classList.toggle("ready", all);
-  $("grand-note").textContent = g && g.mastered
-    ? "Mastered. First try " + g.firstTry + "/" + g.size + ", cleared in " + g.loops + " loops. Run it again to stay sharp."
+  $("grand-note").textContent = (g && g.mastered
+    ? "Mastered. First try " + g.firstTry + "/" + g.size + ", cleared in " + g.loops + " loops" + (g.ms ? ", " + fmtClock(g.ms) + " total" : "") + "."
     : all
       ? "All 13 weeks mastered. Every question, fully shuffled, then error loops until nothing is left."
-      : "Best after all 13 weeks are mastered (" + done.length + "/13 so far). Every question, fully shuffled, then error loops until nothing is left.";
+      : "Best after all 13 weeks are mastered (" + done.length + "/13 so far). Every question, fully shuffled, then error loops.") + limitText;
 
   // Week cards
   $("weeks").replaceChildren(...WEEK_NUMS.map(w => {
     const p = store.progress["w" + w];
     const going = s && s.scope === "week" && s.week === w;
-    const count = questions.filter(q => weekNum(q) === w).length;
+    const weekQs = questions.filter(q => weekNum(q) === w);
+    const paces = weekQs.map(q => pace(q.id)).filter(x => x !== null);
     const pill = p && p.mastered ? el("span", { class: "pill done" }, "Mastered")
       : going ? el("span", { class: "pill going" }, "In progress")
       : el("span", { class: "pill" }, "New");
-    let meta = count + " questions";
+    let meta = weekQs.length + " questions";
     if (p && p.mastered) meta += " · first try " + p.firstTry + "/" + p.size + " · " + p.loops + (p.loops === 1 ? " loop" : " loops");
+    if (paces.length) meta += " · avg " + fmtS(mean(paces));
     if (w === 0) meta += " · practice";
     if (w === 12) meta += " · unofficial answers";
     return el("li", null, el("button", {
@@ -853,27 +1015,86 @@ function renderHome() {
     ));
   }));
 
+  // Slowest questions
+  const timed = questions.filter(q => pace(q.id) !== null).length;
+  $("slow").hidden = timed < 5;
+  if (timed >= 5) {
+    $("slow-list").replaceChildren(...timeRows(slowest(8)));
+    $("slow-note").textContent = "Average of your last 3 attempts at each question (" + timed + " of 130 timed so far). Amber is over 10 seconds, red means you ran out of time at least once.";
+    $("slow-go").textContent = "Drill the " + Math.min(SLOW_DRILL_SIZE, timed) + " slowest";
+  }
+
   $("opt-shuffle").checked = store.prefs.shuffleOptions;
   $("opt-auto").checked = store.prefs.autoAdvance;
+  $("opt-limit").value = String(store.prefs.grandLimit);
   show("home");
 }
 
-/* ---------- session engine ---------- */
-let advanceTimer = null;
+/* ---------- live timer ---------- */
+let advanceTimer = null, tickTimer = null, qStart = 0, hiddenAt = 0;
+const elapsed = () => (hiddenAt || performance.now()) - qStart;
 
-function startSession(scope, week) {
-  const pool = scope === "grand" ? questions : questions.filter(q => weekNum(q) === week);
+function startTimer() {
+  stopTimer();
+  qStart = performance.now();
+  hiddenAt = 0;
+  paintTimer(0);
+  tickTimer = setInterval(tick, 100);
+}
+function stopTimer() {
+  clearInterval(tickTimer);
+  tickTimer = null;
+}
+function tick() {
+  const s = store.session;
+  if (!s || s.picked !== null || hiddenAt) return;
+  const e = elapsed();
+  if (s.limit && e >= s.limit) return timeout();
+  paintTimer(e);
+}
+function paintTimer(e) {
+  const s = store.session, box = $("timer");
+  box.classList.toggle("nolimit", !s.limit);
+  if (s.limit) {
+    const left = Math.max(0, s.limit - e), frac = left / s.limit;
+    $("t-q-label").textContent = "Time left";
+    $("t-q").textContent = fmtS(left);
+    $("t-bar").style.width = (frac * 100).toFixed(1) + "%";
+    box.classList.toggle("warn", frac <= .5 && frac > .25);
+    box.classList.toggle("danger", frac <= .25);
+  } else {
+    $("t-q-label").textContent = "This question";
+    $("t-q").textContent = fmtS(e);
+    box.classList.toggle("warn", e >= SLOW_MS);
+    box.classList.remove("danger");
+  }
+  box.classList.toggle("stopped", s.picked !== null);
+  $("t-total").textContent = fmtClock(s.loopMs + (s.picked === null ? e : 0));
+}
+// Switching tabs or locking the phone pauses the clock.
+document.addEventListener("visibilitychange", () => {
+  if (!tickTimer) return;
+  if (document.hidden) hiddenAt = performance.now();
+  else if (hiddenAt) { qStart += performance.now() - hiddenAt; hiddenAt = 0; }
+});
+
+/* ---------- session engine ---------- */
+function startSession(scope, week, ids) {
+  const pool = ids || (scope === "grand" ? questions : questions.filter(q => weekNum(q) === week)).map(q => q.id);
   store.session = {
-    scope, week: scope === "grand" ? null : week,
+    scope, week: scope === "week" ? week : null,
+    size: pool.length,
+    limit: scope === "week" ? 0 : store.prefs.grandLimit * 1000,
     phase: "quiz",
     loop: 1,
-    queue: shuffle(pool.map(q => q.id)),
+    queue: shuffle(pool),
     index: 0,
     wrongs: [],
     correct: 0,
     streak: 0,
     answers: 0,
     history: [],
+    ms: 0, loopMs: 0, loopTimes: {}, firstTimes: {},
     order: null, orderFor: null, picked: null
   };
   save();
@@ -895,9 +1116,11 @@ function renderQuestion() {
   tag.classList.toggle("err", s.loop > 1);
   $("scope-label").textContent = scopeName(s);
 
+  const p = pace(q.id);
   $("qmeta").replaceChildren(...[
     el("span", { class: "chip" }, q.week),
     s.loop > 1 ? el("span", { class: "chip warn" }, "Missed before") : null,
+    p !== null && p >= SLOW_MS ? el("span", { class: "chip slow" }, "Slow last time · " + fmtS(p)) : null,
     weekNum(q) === 12 ? el("span", { class: "chip" }, "Unofficial answer") : null
   ].filter(Boolean));
   $("qtext").textContent = q.question;
@@ -909,10 +1132,16 @@ function renderQuestion() {
   )));
   $("feedback").hidden = true;
   updateProgress();
-
-  if (s.picked !== null) paintAnswer(false); // resumed mid-question after answering
-  else setNext(false);
   show("quiz");
+
+  if (s.picked !== null) { // resumed after answering this one
+    stopTimer();
+    paintAnswer(false);
+    paintTimer(s.loopTimes[q.id] ? s.loopTimes[q.id].ms : 0);
+  } else {
+    setNext(false);
+    startTimer();
+  }
 }
 
 function updateProgress() {
@@ -938,15 +1167,34 @@ function setNext(ready) {
 
 function answer(i) {
   const s = store.session;
-  if (!s || s.picked !== null) return;
+  if (!s || s.phase !== "quiz" || s.picked !== null) return;
   const q = byId.get(s.queue[s.index]);
-  s.picked = i;
+  const ms = s.limit ? Math.min(elapsed(), s.limit) : elapsed();
+  stopTimer();
+  settle(q, i, s.order[i] === q.answer, ms, false);
+}
+
+function timeout() {
+  const s = store.session;
+  stopTimer();
+  settle(byId.get(s.queue[s.index]), -1, false, s.limit, true);
+}
+
+function settle(q, picked, right, ms, timedOut) {
+  const s = store.session;
+  s.picked = picked;
   s.answers++;
-  const right = s.order[i] === q.answer;
   if (right) { s.correct++; s.streak++; }
   else { s.wrongs.push(q.id); s.streak = 0; }
+  const rec = { ms: Math.round(ms), miss: !right, timeout: timedOut };
+  s.loopTimes[q.id] = rec;
+  if (s.loop === 1) s.firstTimes[q.id] = rec;
+  s.loopMs += rec.ms;
+  s.ms += rec.ms;
+  recordTime(q.id, ms, timedOut);
   save();
   paintAnswer(true);
+  paintTimer(rec.ms);
 
   const bar = $("progress");
   bar.classList.remove("pulse"); void bar.offsetWidth; bar.classList.add("pulse");
@@ -962,6 +1210,7 @@ function paintAnswer(fresh) {
   const q = byId.get(s.queue[s.index]);
   const rightPos = s.order.indexOf(q.answer);
   const correct = s.picked === rightPos;
+  const timedOut = s.picked === -1;
   [...$("options").querySelectorAll(".opt")].forEach((b, i) => {
     b.disabled = true;
     if (i === rightPos) b.classList.add("is-right");
@@ -969,10 +1218,12 @@ function paintAnswer(fresh) {
     else b.classList.add("is-dim");
     if (i === s.picked && fresh) b.classList.add("picked");
   });
+  const rec = s.loopTimes[q.id];
+  const took = rec ? " · " + fmtS(rec.ms) : "";
   const fb = $("feedback");
   fb.className = "feedback " + (correct ? "ok" : "no");
   fb.replaceChildren(...[
-    el("strong", null, correct ? "Correct" : "Not this one"),
+    el("strong", null, (correct ? "Correct" : timedOut ? "Time's up" : "Not this one") + (timedOut ? "" : took)),
     correct ? null : document.createTextNode("Answer " + LETTERS[rightPos] + ": " + q.options[q.answer] + ". It comes back in the next loop.")
   ].filter(Boolean));
   fb.hidden = false;
@@ -994,7 +1245,7 @@ function next() {
 
 function endLoop() {
   const s = store.session;
-  s.history.push({ size: s.queue.length, wrong: s.wrongs.length });
+  s.history.push({ size: s.queue.length, wrong: s.wrongs.length, ms: s.loopMs });
   if (s.wrongs.length === 0) return complete();
   s.phase = "summary";
   save();
@@ -1012,6 +1263,8 @@ function startNextLoop() {
   s.phase = "quiz";
   s.orderFor = null;
   s.picked = null;
+  s.loopMs = 0;
+  s.loopTimes = {};
   save();
   renderQuestion();
 }
@@ -1030,14 +1283,18 @@ function chainNodes(history, pending) {
 }
 
 function renderSummary() {
+  stopTimer();
   const s = store.session;
   const last = s.history[s.history.length - 1];
   const got = last.size - last.wrong;
+  const timeouts = Object.values(s.loopTimes).filter(r => r.timeout).length;
   $("sum-tag").textContent = loopName(s, s.loop) + " complete";
   $("sum-tag").classList.toggle("err", s.loop > 1);
   $("sum-scope").textContent = scopeName(s);
   $("sum-score").textContent = got + "/" + last.size;
   $("sum-pct").textContent = Math.round(got / last.size * 100) + "% correct";
+  $("sum-time").textContent = "Loop time " + fmtClock(last.ms) + " · " + fmtS(last.ms / last.size) + " per question"
+    + (timeouts ? " · " + timeouts + " ran out of time" : "");
   $("sum-chain").replaceChildren(...chainNodes(s.history, s.wrongs.length));
   $("sum-text").textContent = s.wrongs.length === 1
     ? "1 question left. The next loop is just that one."
@@ -1051,10 +1308,12 @@ function renderSummary() {
       el("span", { class: "ma" }, q.options[q.answer])
     );
   }));
+  fillTimes("sum-times", "sum-times-more", sortedTimes(s.loopTimes), 10);
   show("summary");
 }
 
 function complete() {
+  stopTimer();
   const s = store.session;
   const first = s.history[0];
   const record = {
@@ -1063,17 +1322,21 @@ function complete() {
     firstTry: first.size - first.wrong,
     loops: s.history.length,
     answers: s.answers,
+    ms: s.ms,
     at: Date.now()
   };
-  store.progress[progressKey(s)] = record;
+  if (s.scope !== "slow") store.progress[s.scope === "grand" ? "grand" : "w" + s.week] = record;
   store.session = null;
   save();
 
-  $("done-title").textContent = s.scope === "grand" ? "All 130 memorised" : "Week " + s.week + " mastered";
+  $("done-title").textContent = s.scope === "grand" ? "All 130 memorised"
+    : s.scope === "slow" ? "Slow questions cleared" : "Week " + s.week + " mastered";
   $("done-chain").replaceChildren(...chainNodes(s.history, 0));
   $("done-first").textContent = record.firstTry + "/" + record.size;
   $("done-loops").textContent = record.loops;
-  $("done-answers").textContent = record.answers;
+  $("done-time").textContent = fmtClock(record.ms);
+  $("done-avg").textContent = fmtS(record.ms / record.answers);
+  fillTimes("done-times", "done-times-more", sortedTimes(s.firstTimes), 10);
 
   const doneWeeks = masteredWeeks();
   const nextWeek = s.scope === "week"
@@ -1081,19 +1344,28 @@ function complete() {
     : undefined;
   const nextBtn = $("done-next");
   if (s.scope === "grand") {
-    $("done-text").textContent = "Every question answered correctly in its final loop. Run the Grand Test again before the exam to check it has stuck.";
+    $("done-text").textContent = "Every question answered correctly in its final loop. Drill the slowest ones, then run the Grand Test again to beat this time.";
     nextBtn.textContent = "Run Grand Test again";
     nextBtn.onclick = () => startSession("grand");
+  } else if (s.scope === "slow") {
+    $("done-text").textContent = "Your slowest list is recalculated after every attempt. Drill it again until nothing stays amber.";
+    nextBtn.textContent = "Drill the slowest again";
+    nextBtn.onclick = startSlowDrill;
   } else if (nextWeek !== undefined) {
     $("done-text").textContent = doneWeeks.length + " of 13 weeks mastered. Keep the momentum while it is fresh.";
     nextBtn.textContent = "Start Week " + nextWeek;
     nextBtn.onclick = () => startSession("week", nextWeek);
   } else {
-    $("done-text").textContent = "All 13 weeks mastered. The Grand Test is next: all 130 questions, fully shuffled.";
+    $("done-text").textContent = "All 13 weeks mastered. The Grand Test is next: all 130 questions, fully shuffled, against the clock.";
     nextBtn.textContent = "Start Grand Test";
     nextBtn.onclick = () => startSession("grand");
   }
   show("done");
+}
+
+function startSlowDrill() {
+  const ids = slowest(SLOW_DRILL_SIZE).map(x => x.id);
+  if (ids.length) startSession("slow", null, ids);
 }
 
 function resume() {
@@ -1105,6 +1377,7 @@ function resume() {
 
 function exitToHome() {
   clearTimeout(advanceTimer);
+  stopTimer();
   save();
   renderHome();
 }
@@ -1116,10 +1389,12 @@ $("sum-exit").addEventListener("click", exitToHome);
 $("sum-go").addEventListener("click", startNextLoop);
 $("done-home").addEventListener("click", renderHome);
 $("grand-go").addEventListener("click", () => startSession("grand"));
+$("slow-go").addEventListener("click", startSlowDrill);
 $("resume-go").addEventListener("click", resume);
 $("resume-drop").addEventListener("click", () => { store.session = null; save(); renderHome(); });
 $("opt-shuffle").addEventListener("change", e => { store.prefs.shuffleOptions = e.target.checked; save(); });
 $("opt-auto").addEventListener("change", e => { store.prefs.autoAdvance = e.target.checked; save(); });
+$("opt-limit").addEventListener("change", e => { store.prefs.grandLimit = Number(e.target.value); save(); renderHome(); });
 
 let resetArmed = null;
 $("reset").addEventListener("click", e => {
@@ -1131,11 +1406,12 @@ $("reset").addEventListener("click", e => {
   }
   clearTimeout(resetArmed); resetArmed = null;
   b.textContent = "Reset all progress";
-  store.progress = {}; store.session = null; save(); renderHome();
+  store.progress = {}; store.times = {}; store.session = null; save(); renderHome();
 });
 
 document.addEventListener("keydown", e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.tagName === "SELECT") return;
   const k = e.key.toLowerCase();
   if (!$("quiz").hidden) {
     const i = "1234".indexOf(k) >= 0 ? "1234".indexOf(k) : "abcd".indexOf(k);

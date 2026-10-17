@@ -13,6 +13,16 @@ Open `index.html` in any browser. There is nothing to install.
 3. **Grand Test.** All 130 questions from every week, fully shuffled.
 4. **Final error loop.** Misses from the Grand Test go through the same nested loop until nothing is left.
 
+## Timer and slow-question drill
+
+- Every question has a live timer, and the total time for the loop runs alongside it.
+- **Grand Test countdown:** each question gets a time limit (20 s by default; 10, 15, 30 s or off in settings).
+  The bar turns amber at half time and red in the last quarter. Running out of time counts as a miss, so that question goes into the error loop.
+- Weekly mode has no limit. The clock counts up and turns amber after 10 seconds.
+- The clock pauses while the tab is hidden or the phone is locked.
+- Each loop summary and each finished module lists the time you spent on every question, slowest first.
+- The home screen shows your **slowest questions** (the average of your last 3 attempts at each) and a button that drills the 20 slowest as their own module, with the same countdown and error loops.
+
 Clicking an answer turns it green if it is right or red if it is wrong, and the correct answer is shown straight away.
 The progress bar tracks the current loop. Answer options are shuffled too, so you learn the answer and not its position. You can turn this off.
 Progress and any unfinished session are saved in the browser's localStorage.
