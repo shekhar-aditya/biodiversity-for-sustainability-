@@ -345,15 +345,13 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
 .timer.paused { opacity: .6; }
 .timer.paused #t-q { animation: none !important; }
 
-/* Key-word marks */
+/* Key words of the correct answer, marked after answering */
 mark.kw {
   background: var(--kw-bg); color: inherit; font-weight: 700;
-  border-radius: 4px; padding: 0 2px;
+  border-radius: 4px; padding: 0 3px;
   -webkit-box-decoration-break: clone; box-decoration-break: clone;
 }
-.qtext mark.kw { background: none; padding: 0; text-decoration: underline; text-decoration-color: var(--warn); text-decoration-thickness: 3px; text-underline-offset: 4px; }
-.opt.is-right mark.kw, .opt.is-wrong mark.kw { background: rgba(255, 255, 255, .22); }
-.chip.kwchip { color: var(--accent); background: var(--accent-soft); }
+.opt.is-right mark.kw { background: #fbe7a1; color: #14201a; }
 
 /* Timer tile */
 .timer {
@@ -484,13 +482,7 @@ mark.kw {
         <option value="30">30 s</option>
       </select>
     </label>
-    <label class="toggle with-select" for="opt-hl">Highlight key words
-      <select id="opt-hl" class="select">
-        <option value="gap">When one option is longer</option>
-        <option value="always">Every question</option>
-        <option value="off">Off</option>
-      </select>
-    </label>
+    <label class="toggle"><input id="opt-hl" type="checkbox" checked> After answering, highlight the key words of the correct answer</label>
     <label class="toggle"><input id="opt-shuffle" type="checkbox" checked> Shuffle answer options (learn the answer, not its position)</label>
     <label class="toggle"><input id="opt-auto" type="checkbox" checked> Jump to the next question after a correct answer</label>
     <div class="foot">
@@ -917,7 +909,7 @@ function load() {
 }
 let store = load();
 store.progress = store.progress || {};
-store.prefs = Object.assign({ shuffleOptions: true, autoAdvance: true, grandLimit: 30, highlight: "gap" }, store.prefs || {});
+store.prefs = Object.assign({ shuffleOptions: true, autoAdvance: true, grandLimit: 30, markAnswer: true }, store.prefs || {});
 if (!store.prefs.limitV2) { store.prefs.grandLimit = 30; store.prefs.limitV2 = true; } // old default was 20 s
 store.times = store.times || {}; // question id -> { recent: [ms, ms, ms], best, n, timeouts (answers over the limit) }
 store.session = normalize(store.session || null);
@@ -1023,48 +1015,35 @@ const sortedTimes = map => Object.keys(map)
   .map(id => Object.assign({ id: Number(id) }, map[id]))
   .sort((a, b) => b.ms - a.ms);
 
-/* ---------- key-word highlighting ----------
-   Counters the "pick the longest option" habit. When one option is much longer
-   than the rest, the question's topic words and the words unique to each option
-   are marked, with the same small number per option so the marks give nothing away. */
+/* ---------- answer key words ----------
+   After an answer, the correct option's key words are marked: the words that
+   appear nowhere in the question or in any other option, so they stick. */
 const STOP = new Set(("a an the of in on at to for from by with and or but not no nor is are was were be been being it its "
   + "this that these those as into than then their there they them which what who whom whose why how when where does do did "
   + "can could should would may might must will shall has have had all any each only also very more most less such so if "
   + "about between within without through over under up down out per one").split(" "));
-const Q_STOP = new Set([...STOP, ...("describe describes described best statement following example means mean meant refer refers "
-  + "term main mainly primarily correctly identify identifies represent represents set especially often used called true "
-  + "correct happens important").split(" ")]);
-const LENGTH_GAP = 1.3; // longest option at least 30% longer than the next one
 const norm = w => w.toLowerCase().replace(/([^s])s$/, "$1");
 const splitWords = text => text.split(/([A-Za-z0-9][A-Za-z0-9'-]*)/); // odd indices are words
-function lengthGap(q) {
-  const L = q.options.map(o => o.length).sort((a, b) => b - a);
-  return L[0] >= LENGTH_GAP * L[1];
-}
-function pickKeys(parts, ok, cap) {
-  return new Set(parts.map((w, i) => ({ w, i }))
-    .filter(x => x.i % 2 && x.w.length >= 3 && ok(x.w))
+const wordSet = text => new Set(splitWords(text).filter((_, i) => i % 2).map(norm));
+function answerKeys(q) {
+  const elsewhere = new Set([q.question, ...q.options.filter((_, i) => i !== q.answer)]
+    .flatMap(t => [...wordSet(t)]));
+  return new Set(splitWords(q.options[q.answer]).map((w, i) => ({ w, i }))
+    .filter(x => x.i % 2 && (x.w.length >= 3 || /\d/.test(x.w)) && !STOP.has(x.w.toLowerCase()) && !elsewhere.has(norm(x.w)))
     .sort((a, b) => b.w.length - a.w.length || a.i - b.i)
-    .slice(0, cap)
+    .slice(0, 4)
     .map(x => x.i));
 }
-function keyWords(q) {
-  const parts = q.options.map(splitWords);
-  const sets = parts.map(p => new Set(p.filter((_, i) => i % 2).map(norm)));
-  return {
-    question: pickKeys(splitWords(q.question), w => !Q_STOP.has(w.toLowerCase()), 4),
-    options: parts.map((p, k) => pickKeys(p, w => !STOP.has(w.toLowerCase())
-      && !sets.some((set, j) => j !== k && set.has(norm(w))), 3))
-  };
-}
-function marked(text, keys) {
-  const frag = document.createDocumentFragment();
+// The correct answer text, with its key words marked when that setting is on.
+function answerText(q) {
+  const text = q.options[q.answer];
+  if (!store.prefs.markAnswer) return text;
+  const keys = answerKeys(q), frag = document.createDocumentFragment();
   splitWords(text).forEach((part, i) => {
     if (part) frag.append(keys.has(i) ? el("mark", { class: "kw" }, part) : part);
   });
   return frag;
 }
-const highlightFor = q => store.prefs.highlight === "always" || (store.prefs.highlight === "gap" && lengthGap(q));
 
 /* ---------- home ---------- */
 function renderHome() {
@@ -1138,7 +1117,7 @@ function renderHome() {
   $("opt-shuffle").checked = store.prefs.shuffleOptions;
   $("opt-auto").checked = store.prefs.autoAdvance;
   $("opt-limit").value = String(store.prefs.grandLimit);
-  $("opt-hl").value = store.prefs.highlight;
+  $("opt-hl").checked = store.prefs.markAnswer;
   show("home");
 }
 
@@ -1274,19 +1253,18 @@ function renderQuestion() {
   $("qmeta").replaceChildren(...[
     el("span", { class: "chip" }, q.week),
     s.loop > 1 ? el("span", { class: "chip warn" }, "Missed before") : null,
-    store.prefs.highlight !== "off" && lengthGap(q) ? el("span", { class: "chip kwchip" }, "Don't go by length · read the marked words") : null,
     p !== null && p >= SLOW_MS ? el("span", { class: "chip slow" }, "Slow last time · " + fmtS(p)) : null,
     weekNum(q) === 12 ? el("span", { class: "chip" }, "Unofficial answer") : null
   ].filter(Boolean));
-  const kw = highlightFor(q) ? keyWords(q) : null;
-  $("qtext").replaceChildren(kw ? marked(q.question, kw.question) : q.question);
+  $("qtext").textContent = q.question;
   $("options").replaceChildren(...s.order.map((optIdx, i) => el("li", null,
     el("button", { class: "opt", type: "button", "data-i": i, onclick: () => answer(i) },
       el("span", { class: "key" }, LETTERS[i]),
-      el("span", { class: "txt" }, kw ? marked(q.options[optIdx], kw.options[optIdx]) : q.options[optIdx])
+      el("span", { class: "txt" }, q.options[optIdx])
     )
   )));
   $("feedback").hidden = true;
+  $("feedback").replaceChildren();
   updateProgress();
   show("quiz");
 
@@ -1353,7 +1331,7 @@ function settle(q, picked, right, ms) {
 
   if (right && !late && store.prefs.autoAdvance) {
     clearTimeout(advanceTimer);
-    advanceTimer = setTimeout(next, 700);
+    advanceTimer = setTimeout(next, store.prefs.markAnswer ? 1200 : 700); // a beat longer to read the marked words
   }
 }
 
@@ -1366,7 +1344,7 @@ function paintAnswer(fresh) {
   const late = !!(rec && rec.late);
   [...$("options").querySelectorAll(".opt")].forEach((b, i) => {
     b.disabled = true;
-    if (i === rightPos) b.classList.add("is-right");
+    if (i === rightPos) { b.classList.add("is-right"); b.querySelector(".txt").replaceChildren(answerText(q)); }
     else if (i === s.picked) b.classList.add("is-wrong");
     else b.classList.add("is-dim");
     if (i === s.picked && fresh) b.classList.add("picked");
@@ -1378,7 +1356,7 @@ function paintAnswer(fresh) {
     el("strong", null, (late ? "Right, but too slow" : correct ? "Correct" : "Not this one") + took),
     late ? document.createTextNode("Over the " + s.limit / 1000 + " s limit, so it is not counted as correct. It comes back in the next loop.")
       : correct ? null
-      : document.createTextNode("Answer " + LETTERS[rightPos] + ": " + q.options[q.answer] + ". It comes back in the next loop.")
+      : el("span", null, "Answer " + LETTERS[rightPos] + ": ", answerText(q), ". It comes back in the next loop.")
   ].filter(Boolean));
   fb.hidden = false;
   updateProgress();
@@ -1460,7 +1438,7 @@ function renderSummary() {
     return el("li", null,
       el("span", { class: "mw" }, q.week + (r && r.late ? " · right but over time" : "")),
       el("span", { class: "mq" }, q.question),
-      el("span", { class: "ma" }, q.options[q.answer])
+      el("span", { class: "ma" }, answerText(q))
     );
   }));
   fillTimes("sum-times", "sum-times-more", sortedTimes(s.loopTimes), 10);
@@ -1553,7 +1531,7 @@ $("resume-drop").addEventListener("click", () => { store.session = null; save();
 $("opt-shuffle").addEventListener("change", e => { store.prefs.shuffleOptions = e.target.checked; save(); });
 $("opt-auto").addEventListener("change", e => { store.prefs.autoAdvance = e.target.checked; save(); });
 $("opt-limit").addEventListener("change", e => { store.prefs.grandLimit = Number(e.target.value); save(); renderHome(); });
-$("opt-hl").addEventListener("change", e => { store.prefs.highlight = e.target.value; save(); });
+$("opt-hl").addEventListener("change", e => { store.prefs.markAnswer = e.target.checked; save(); });
 
 let resetArmed = null;
 $("reset").addEventListener("click", e => {
