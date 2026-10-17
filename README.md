@@ -28,6 +28,16 @@ Open `index.html` in any browser. There is nothing to install.
 - Each loop summary and each finished module lists the time you spent on every question, slowest first.
 - The home screen shows your **slowest questions** (the average of your last 3 attempts at each) and a button that drills the 20 slowest as their own module, with the same countdown and error loops.
 
+## Key-word highlighting
+
+The longest option is the correct one in 97 of the 130 questions, so picking by length works without knowing the answer.
+When one option is at least 30% longer than the next longest (56 questions), the app:
+- underlines the topic words in the question,
+- highlights up to 3 words in each option that appear in no other option, the same number per option, so the marks do not point to the answer,
+- shows a "Don't go by length" reminder.
+
+Settings let you turn this on for every question or off.
+
 Clicking an answer turns it green if it is right or red if it is wrong, and the correct answer is shown straight away.
 The progress bar tracks the current loop. Answer options are shuffled too, so you learn the answer and not its position. You can turn this off.
 Progress and any unfinished session are saved in the browser's localStorage.
