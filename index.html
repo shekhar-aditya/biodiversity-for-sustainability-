@@ -321,6 +321,29 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
 :root[data-theme="dark"] .burst { color: #7fd9a3; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .burst { color: #7fd9a3; } }
 
+/* Status bar: live IST clock + pause */
+.statusbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: -6px; }
+.ist { display: inline-flex; align-items: baseline; gap: 8px; min-width: 0; white-space: nowrap; }
+@media (max-width: 480px) { .ist-date { display: none; } .ist { gap: 6px; } .btn-pause { padding: 8px 14px; } }
+.ist b { font-size: var(--step-1); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.ist-date { font-size: var(--step--1); color: var(--muted); }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--right); align-self: center; animation: live 2s ease-in-out infinite; }
+@keyframes live { 0%, 100% { box-shadow: 0 0 0 0 var(--right-soft); } 50% { box-shadow: 0 0 0 5px var(--right-soft); } }
+.btn-pause { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px; }
+.btn-pause::before {
+  content: ""; display: inline-block; box-sizing: border-box;
+  width: 10px; height: 12px; border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+}
+.btn-pause[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-pause[aria-pressed="true"]::before {
+  width: 0; height: 0; border-right: 0;
+  border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+}
+#quiz:not(.is-paused) .pause-panel { display: none; }
+#quiz.is-paused > .card:not(.pause-panel), #quiz.is-paused .actionbar, #quiz.is-paused .hint { display: none; }
+.timer.paused { opacity: .6; }
+.timer.paused #t-q { animation: none !important; }
+
 /* Timer tile */
 .timer {
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px;
@@ -460,6 +483,16 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
 
 <!-- QUIZ -->
 <main id="quiz" class="wrap" hidden>
+  <div class="statusbar">
+    <span class="ist" title="Current time in India (IST)">
+      <span class="live-dot" aria-hidden="true"></span>
+      <span class="tlabel">India <span class="ist-wide">· </span>IST</span>
+      <b id="ist-time" class="num">--:--:--</b>
+      <span id="ist-date" class="ist-date"></span>
+    </span>
+    <button id="pause" class="btn btn-pause" type="button" aria-pressed="false">Pause</button>
+  </div>
+
   <div class="qtop">
     <div class="qtop-label">
       <span id="loop-tag" class="loop-tag">Rapid fire</span>
@@ -485,6 +518,14 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
     <div class="tclock right"><span class="tlabel">Loop time</span><b id="t-total">0:00</b></div>
   </div>
 
+  <section id="pause-panel" class="card pause-panel" aria-live="polite">
+    <p class="eyebrow">Paused</p>
+    <h2 class="qtext">Test paused</h2>
+    <p id="pause-info" class="muted num" style="margin: 0"></p>
+    <p style="margin: 0">The question is hidden and the clock is stopped, so this break does not count against your time.</p>
+    <button id="pause-resume" class="btn btn-primary btn-block" type="button">Resume test</button>
+  </section>
+
   <article class="card">
     <div id="qmeta" class="qmeta"></div>
     <h2 id="qtext" class="qtext"></h2>
@@ -495,7 +536,7 @@ h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); 
   <div class="actionbar">
     <button id="next" class="btn btn-primary" type="button" disabled>Choose an answer</button>
   </div>
-  <p class="hint">Keys: 1–4 or A–D to answer · Enter for next</p>
+  <p class="hint">Keys: 1–4 or A–D to answer · Enter for next · P to pause</p>
 </main>
 
 <!-- LOOP SUMMARY -->
@@ -1039,13 +1080,16 @@ function renderHome() {
 }
 
 /* ---------- live timer ---------- */
-let advanceTimer = null, tickTimer = null, qStart = 0, hiddenAt = 0;
-const elapsed = () => (hiddenAt || performance.now()) - qStart;
+let advanceTimer = null, tickTimer = null, qStart = 0, frozenAt = 0, paused = false;
+const elapsed = () => (frozenAt || performance.now()) - qStart;
+// Freezing stops the question clock; thawing shifts its start so frozen time never counts.
+function freeze() { if (!frozenAt) frozenAt = performance.now(); }
+function thaw() { if (frozenAt) { qStart += performance.now() - frozenAt; frozenAt = 0; } }
 
 function startTimer() {
   stopTimer();
   qStart = performance.now();
-  hiddenAt = 0;
+  frozenAt = 0;
   paintTimer(0);
   tickTimer = setInterval(tick, 100);
 }
@@ -1055,7 +1099,7 @@ function stopTimer() {
 }
 function tick() {
   const s = store.session;
-  if (!s || s.picked !== null || hiddenAt) return;
+  if (!s || s.picked !== null || frozenAt) return;
   paintTimer(elapsed());
 }
 function paintTimer(e) {
@@ -1081,12 +1125,49 @@ function paintTimer(e) {
   box.classList.toggle("stopped", s.picked !== null);
   $("t-total").textContent = fmtClock(s.loopMs + (s.picked === null ? e : 0));
 }
-// Switching tabs or locking the phone pauses the clock.
+// Switching tabs or locking the phone also stops the clock.
 document.addEventListener("visibilitychange", () => {
-  if (!tickTimer) return;
-  if (document.hidden) hiddenAt = performance.now();
-  else if (hiddenAt) { qStart += performance.now() - hiddenAt; hiddenAt = 0; }
+  if (!tickTimer || paused) return;
+  if (document.hidden) freeze(); else thaw();
 });
+
+/* ---------- pause ---------- */
+function pauseQuiz() {
+  const s = store.session;
+  if (!s || $("quiz").hidden || paused) return;
+  paused = true;
+  clearTimeout(advanceTimer);
+  if (tickTimer) freeze();
+  const onQuestion = s.picked === null ? fmtS(elapsed()) + " used on this question" : "this question is already answered";
+  $("pause-info").textContent = "Question " + (s.index + 1) + " of " + s.queue.length + " · " + onQuestion
+    + " · loop time " + fmtClock(s.loopMs + (s.picked === null ? elapsed() : 0));
+  $("quiz").classList.add("is-paused");
+  $("timer").classList.add("paused");
+  const b = $("pause");
+  b.textContent = "Resume";
+  b.setAttribute("aria-pressed", "true");
+  $("pause-resume").focus({ preventScroll: true });
+}
+function resumeQuiz() {
+  if (!paused) return;
+  paused = false;
+  if (tickTimer) thaw();
+  $("quiz").classList.remove("is-paused");
+  $("timer").classList.remove("paused");
+  const b = $("pause");
+  b.textContent = "Pause";
+  b.setAttribute("aria-pressed", "false");
+}
+const togglePause = () => paused ? resumeQuiz() : pauseQuiz();
+
+/* ---------- live India time (IST) ---------- */
+const istTime = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+const istDate = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", weekday: "short", day: "numeric", month: "short" });
+function paintClock() {
+  const now = new Date();
+  $("ist-time").textContent = istTime.format(now);
+  $("ist-date").textContent = istDate.format(now);
+}
 
 /* ---------- session engine ---------- */
 function startSession(scope, week, ids) {
@@ -1177,7 +1258,7 @@ function setNext(ready) {
 
 function answer(i) {
   const s = store.session;
-  if (!s || s.phase !== "quiz" || s.picked !== null) return;
+  if (!s || s.phase !== "quiz" || s.picked !== null || paused) return;
   const q = byId.get(s.queue[s.index]);
   const ms = elapsed();
   stopTimer();
@@ -1243,7 +1324,7 @@ function paintAnswer(fresh) {
 function next() {
   clearTimeout(advanceTimer);
   const s = store.session;
-  if (!s || s.phase !== "quiz" || s.picked === null) return;
+  if (!s || s.phase !== "quiz" || s.picked === null || paused) return;
   s.index++;
   s.picked = null;
   s.orderFor = null;
@@ -1386,6 +1467,7 @@ function resume() {
 
 function exitToHome() {
   clearTimeout(advanceTimer);
+  resumeQuiz();
   stopTimer();
   save();
   renderHome();
@@ -1393,6 +1475,8 @@ function exitToHome() {
 
 /* ---------- wiring ---------- */
 $("next").addEventListener("click", next);
+$("pause").addEventListener("click", togglePause);
+$("pause-resume").addEventListener("click", resumeQuiz);
 $("exit").addEventListener("click", exitToHome);
 $("sum-exit").addEventListener("click", exitToHome);
 $("sum-go").addEventListener("click", startNextLoop);
@@ -1423,6 +1507,8 @@ document.addEventListener("keydown", e => {
   if (e.target.tagName === "SELECT") return;
   const k = e.key.toLowerCase();
   if (!$("quiz").hidden) {
+    if (k === "p" || (paused && (k === "enter" || k === " "))) { e.preventDefault(); togglePause(); return; }
+    if (paused) return;
     const i = "1234".indexOf(k) >= 0 ? "1234".indexOf(k) : "abcd".indexOf(k);
     if (k.length === 1 && i >= 0) { e.preventDefault(); answer(i); return; }
     if ((k === "enter" || k === " " || k === "arrowright") && store.session && store.session.picked !== null) {
@@ -1433,6 +1519,8 @@ document.addEventListener("keydown", e => {
   }
 });
 
+paintClock();
+setInterval(paintClock, 1000);
 renderHome();
 </script>
 </body>
