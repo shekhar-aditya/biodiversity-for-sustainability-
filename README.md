@@ -16,8 +16,11 @@ Open `index.html` in any browser. There is nothing to install.
 ## Timer and slow-question drill
 
 - Every question has a live timer, and the total time for the loop runs alongside it.
-- **Grand Test countdown:** each question gets a time limit (20 s by default; 10, 15, 30 s or off in settings).
-  The bar turns amber at half time and red in the last quarter. Running out of time counts as a miss, so that question goes into the error loop.
+- **Grand Test countdown:** each question gets 30 seconds by default (10, 15 or 20 s, or off, in settings).
+  The bar turns amber at half time and red in the last quarter.
+- When time runs out, the question stays open and the clock counts the extra seconds (+5.1s). Nothing is answered for you.
+  A right answer given late still shows green, but it is marked "right but over time" and is not counted as correct.
+  It counts as a miss in the score and stats, and the question comes back in the error loop.
 - Weekly mode has no limit. The clock counts up and turns amber after 10 seconds.
 - The clock pauses while the tab is hidden or the phone is locked.
 - Each loop summary and each finished module lists the time you spent on every question, slowest first.
