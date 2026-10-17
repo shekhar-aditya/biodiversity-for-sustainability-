@@ -1,0 +1,1154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Biodiversity Recall</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: one calm reading column (max 680px). Home = progress strip + week list; quiz = progress bar, question, stacked answers, sticky action bar. */
+:root {
+  --bg: #e7efea;
+  --bg-glow: #d6e6dd;
+  --surface: #fbfdfc;
+  --ink: #0f1f18;
+  --muted: #4a5c53;
+  --line: #c6d6ce;
+  --accent: #1c6a55;
+  --accent-ink: #ffffff;
+  --accent-soft: #d3e7de;
+  --right: #1a7f43;
+  --right-soft: #dcf2e3;
+  --wrong: #c2372b;
+  --wrong-soft: #fae2df;
+  --on-solid: #ffffff;
+  --shadow: 0 1px 2px rgba(15, 31, 24, .06), 0 6px 20px rgba(15, 31, 24, .06);
+  --font-ui: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-read: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --step--1: .8125rem;
+  --step-0: 1rem;
+  --step-1: 1.125rem;
+  --step-2: 1.375rem;
+  --step-3: 1.75rem;
+  --step-4: 2.25rem;
+  --radius: 14px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1814; --bg-glow: #13261e; --surface: #15231d; --ink: #e6f0eb; --muted: #a2b5ab;
+    --line: #2a3d35; --accent: #62c6a5; --accent-ink: #062219; --accent-soft: #1b392f;
+    --right: #23864e; --right-soft: #143322; --wrong: #c84336; --wrong-soft: #3b1c19;
+    --on-solid: #ffffff; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1814; --bg-glow: #13261e; --surface: #15231d; --ink: #e6f0eb; --muted: #a2b5ab;
+  --line: #2a3d35; --accent: #62c6a5; --accent-ink: #062219; --accent-soft: #1b392f;
+  --right: #23864e; --right-soft: #143322; --wrong: #c84336; --wrong-soft: #3b1c19;
+  --on-solid: #ffffff; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: radial-gradient(120% 60% at 50% 0%, var(--bg-glow), var(--bg) 70%) fixed, var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--step-0);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.eyebrow {
+  font-size: var(--step--1);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); line-height: 1.1; letter-spacing: -.01em; }
+.lede { margin: 0; color: var(--muted); max-width: 60ch; }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Buttons */
+.btn {
+  appearance: none;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background-color .15s, border-color .15s, transform .1s;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--muted); padding-inline: 10px; }
+.btn-ghost:hover { color: var(--ink); border-color: var(--line); }
+.btn-block { width: 100%; }
+
+/* Home */
+.masthead { display: flex; flex-direction: column; gap: 10px; }
+
+.resume {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  background: var(--accent-soft);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.resume-text { min-width: 0; display: flex; flex-direction: column; }
+.resume-text strong { font-size: var(--step-1); }
+.resume-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.mastery { display: flex; flex-direction: column; gap: 10px; }
+.mastery-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.mastery-head h2 { font-size: var(--step-1); }
+.strip { display: grid; grid-template-columns: repeat(13, 1fr); gap: 4px; }
+.strip span { height: 10px; border-radius: 3px; background: var(--line); transition: background-color .3s; }
+.strip span.done { background: var(--right); }
+.strip span.going { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
+
+.grand {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  align-items: center;
+}
+.grand.ready { border-color: var(--accent); }
+.grand h2 { font-family: var(--font-read); font-size: var(--step-2); font-weight: 600; }
+.grand p { margin: 0; color: var(--muted); grid-column: 1; }
+.grand .btn { grid-column: 2; grid-row: 1 / span 2; }
+@media (max-width: 520px) {
+  .grand { grid-template-columns: 1fr; }
+  .grand .btn { grid-column: 1; grid-row: auto; width: 100%; margin-top: 8px; }
+}
+
+.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.section-head h2 { font-size: var(--step-1); }
+
+.weeks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .weeks { grid-template-columns: 1fr; } }
+.week {
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr auto;
+  gap: 2px 10px;
+  transition: border-color .15s, transform .1s;
+}
+.week:hover { border-color: var(--accent); }
+.week:active { transform: translateY(1px); }
+.week-num { font-weight: 700; font-size: var(--step-1); }
+.week-title { grid-column: 1 / -1; color: var(--muted); font-size: .9375rem; line-height: 1.35; }
+.week-meta { grid-column: 1 / -1; font-size: var(--step--1); color: var(--muted); margin-top: 6px; }
+
+.pill {
+  font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  border-radius: 999px; padding: 3px 9px; align-self: start; white-space: nowrap;
+  background: var(--bg); color: var(--muted); border: 1px solid var(--line);
+}
+.pill.done { background: var(--right-soft); color: var(--right); border-color: transparent; }
+.pill.going { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+:root[data-theme="dark"] .pill.done { color: #7fd9a3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill.done { color: #7fd9a3; } }
+
+.settings {
+  display: flex; flex-direction: column; gap: 10px;
+  border-top: 1px solid var(--line); padding-top: 18px;
+}
+.toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; flex: none; }
+.foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-size: var(--step--1); }
+
+/* Quiz */
+.qtop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.qtop-label { min-width: 0; display: flex; flex-direction: column; }
+.qtop-label strong { font-size: var(--step-1); line-height: 1.25; }
+.loop-tag { font-size: var(--step--1); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.loop-tag.err { color: var(--wrong); }
+
+.progress-wrap { display: flex; flex-direction: column; gap: 6px; }
+.progress {
+  height: 12px; border-radius: 999px; background: var(--line); overflow: hidden; position: relative;
+}
+.progress > span {
+  position: absolute; inset: 0 auto 0 0; width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--right));
+  border-radius: inherit;
+  transition: width .35s cubic-bezier(.3, .8, .3, 1);
+}
+.progress.pulse > span { animation: glow .5s ease-out; }
+@keyframes glow { 0% { filter: brightness(1.5) saturate(1.3); } 100% { filter: none; } }
+.progress-row { display: flex; justify-content: space-between; gap: 12px; font-size: var(--step--1); color: var(--muted); }
+.progress-row b { color: var(--ink); }
+
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.qmeta { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); background: var(--bg); border-radius: 6px; padding: 3px 8px; }
+.chip.warn { color: var(--wrong); background: var(--wrong-soft); }
+.qtext { font-family: var(--font-read); font-weight: 600; font-size: var(--step-2); line-height: 1.32; }
+
+.options { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.opt {
+  appearance: none; width: 100%; text-align: left;
+  display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-height: 56px;
+  font-size: var(--step-1);
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color .12s, border-color .12s, color .12s;
+}
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); }
+.opt .key {
+  width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center;
+  font-weight: 700; font-size: .9375rem; background: var(--bg); color: var(--muted);
+}
+.opt .txt { min-width: 0; padding-top: 3px; }
+.opt.is-right { background: var(--right); border-color: var(--right); color: var(--on-solid); }
+.opt.is-wrong { background: var(--wrong); border-color: var(--wrong); color: var(--on-solid); }
+.opt.is-right .key, .opt.is-wrong .key { background: rgba(255, 255, 255, .22); color: var(--on-solid); }
+.opt.is-dim { opacity: .55; }
+.opt.is-right.picked { animation: pop .28s ease-out; }
+.opt.is-wrong { animation: shake .3s ease-out; }
+@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.025); } 100% { transform: scale(1); } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+.feedback { border-radius: 12px; padding: 12px 14px; font-size: var(--step-0); }
+.feedback.ok { background: var(--right-soft); }
+.feedback.no { background: var(--wrong-soft); }
+.feedback strong { display: block; font-size: var(--step-1); }
+.feedback.ok strong { color: var(--right); }
+.feedback.no strong { color: var(--wrong); }
+:root[data-theme="dark"] .feedback.ok strong { color: #7fd9a3; }
+:root[data-theme="dark"] .feedback.no strong { color: #ff9b90; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .feedback.ok strong { color: #7fd9a3; }
+  :root:not([data-theme="light"]) .feedback.no strong { color: #ff9b90; }
+}
+
+.actionbar {
+  position: sticky; bottom: 0;
+  margin-inline: -4px;
+  padding: 12px 4px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to bottom, transparent, var(--bg) 30%);
+  display: flex; gap: 10px; align-items: center;
+}
+.actionbar .btn-primary { flex: 1; min-height: 52px; font-size: var(--step-1); }
+.hint { font-size: var(--step--1); color: var(--muted); text-align: center; margin: 0; }
+@media (hover: none) { .hint { display: none; } }
+
+/* Loop summary + mastered */
+.score { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.score .big { font-family: var(--font-read); font-weight: 700; font-size: 3.25rem; line-height: 1; }
+.chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 700; }
+.chain .node { min-width: 40px; text-align: center; padding: 4px 10px; border-radius: 999px; background: var(--wrong-soft); color: var(--wrong); }
+.chain .node.first { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+.chain .node.zero { background: var(--right); color: var(--on-solid); }
+.chain .node.next { background: transparent; border: 1.5px dashed var(--wrong); }
+.chain .arrow { color: var(--muted); }
+.chain-caption { font-size: var(--step--1); color: var(--muted); margin: 0; }
+
+.missed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.missed li { border-left: 3px solid var(--wrong); padding: 2px 0 2px 12px; display: flex; flex-direction: column; gap: 2px; }
+.missed .mq { font-family: var(--font-read); font-weight: 600; }
+.missed .ma { color: var(--right); font-weight: 700; }
+:root[data-theme="dark"] .missed .ma { color: #7fd9a3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .missed .ma { color: #7fd9a3; } }
+.missed .mw { font-size: var(--step--1); color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat { background: var(--bg); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; }
+.stat b { font-size: var(--step-3); font-family: var(--font-read); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: var(--step--1); color: var(--muted); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row .btn { flex: 1 1 180px; min-height: 50px; }
+
+.burst { font-family: var(--font-read); font-weight: 700; font-size: var(--step-4); line-height: 1.1; color: var(--right); }
+:root[data-theme="dark"] .burst { color: #7fd9a3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .burst { color: #7fd9a3; } }
+
+@media (max-width: 480px) {
+  .wrap { padding-block: 18px 28px; gap: 16px; }
+  h1 { font-size: var(--step-3); }
+  .card { padding: 16px; }
+  .qtext { font-size: 1.25rem; }
+  .opt { font-size: var(--step-0); padding: 11px 12px; }
+  .score .big { font-size: 2.75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<main id="home" class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">NPTEL noc26_bt56 · Biodiversity for Sustainability</p>
+    <h1>Biodiversity Recall</h1>
+    <p class="lede">All 130 assignment questions, Week 0 to Week 12. Pick a week and answer fast. Every miss comes back in a smaller, reshuffled loop until you clear one with zero mistakes.</p>
+  </header>
+
+  <section id="resume" class="resume" hidden>
+    <div class="resume-text">
+      <span class="muted">Unfinished session</span>
+      <strong id="resume-label">Week 3 · Error loop 1</strong>
+      <span id="resume-detail" class="muted num"></span>
+    </div>
+    <div class="resume-actions">
+      <button id="resume-go" class="btn btn-primary" type="button">Resume</button>
+      <button id="resume-drop" class="btn" type="button">Discard</button>
+    </div>
+  </section>
+
+  <section class="mastery" aria-labelledby="mastery-title">
+    <div class="mastery-head">
+      <h2 id="mastery-title">Weeks mastered</h2>
+      <span class="num"><b id="mastered-count">0</b> / 13</span>
+    </div>
+    <div id="strip" class="strip" aria-hidden="true"></div>
+  </section>
+
+  <section id="grand" class="grand">
+    <h2>Grand Test · all 130</h2>
+    <p id="grand-note">Every question from every week, fully shuffled, followed by error loops until nothing is left.</p>
+    <button id="grand-go" class="btn btn-primary" type="button">Start Grand Test</button>
+  </section>
+
+  <section class="mastery">
+    <div class="section-head">
+      <h2>Weekly modules</h2>
+      <span class="muted" style="font-size: var(--step--1)">10 questions each</span>
+    </div>
+    <ul id="weeks" class="weeks"></ul>
+  </section>
+
+  <section class="settings" aria-label="Settings">
+    <label class="toggle"><input id="opt-shuffle" type="checkbox" checked> Shuffle answer options (learn the answer, not its position)</label>
+    <label class="toggle"><input id="opt-auto" type="checkbox" checked> Jump to the next question after a correct answer</label>
+    <div class="foot">
+      <span class="muted">Progress is saved in this browser.</span>
+      <button id="reset" class="btn btn-ghost" type="button">Reset all progress</button>
+    </div>
+  </section>
+</main>
+
+<!-- QUIZ -->
+<main id="quiz" class="wrap" hidden>
+  <div class="qtop">
+    <div class="qtop-label">
+      <span id="loop-tag" class="loop-tag">Rapid fire</span>
+      <strong id="scope-label">Week 1</strong>
+    </div>
+    <button id="exit" class="btn btn-ghost" type="button">Save &amp; exit</button>
+  </div>
+
+  <div class="progress-wrap">
+    <div id="progress" class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Loop progress"><span></span></div>
+    <div class="progress-row num">
+      <span>Question <b id="pos">1</b> of <b id="total">10</b> · <b id="pct">0%</b></span>
+      <span><b id="correct-count">0</b> correct · streak <b id="streak">0</b></span>
+    </div>
+  </div>
+
+  <article class="card">
+    <div id="qmeta" class="qmeta"></div>
+    <h2 id="qtext" class="qtext"></h2>
+    <ol id="options" class="options"></ol>
+    <div id="feedback" class="feedback" aria-live="polite" hidden></div>
+  </article>
+
+  <div class="actionbar">
+    <button id="next" class="btn btn-primary" type="button" disabled>Choose an answer</button>
+  </div>
+  <p class="hint">Keys: 1–4 or A–D to answer · Enter for next</p>
+</main>
+
+<!-- LOOP SUMMARY -->
+<main id="summary" class="wrap" hidden>
+  <div class="qtop">
+    <div class="qtop-label">
+      <span id="sum-tag" class="loop-tag">Rapid fire complete</span>
+      <strong id="sum-scope">Week 1</strong>
+    </div>
+    <button id="sum-exit" class="btn btn-ghost" type="button">Save &amp; exit</button>
+  </div>
+  <section class="card">
+    <div class="score num"><span id="sum-score" class="big">7/10</span><span id="sum-pct" class="muted">70%</span></div>
+    <div>
+      <div id="sum-chain" class="chain num"></div>
+      <p class="chain-caption">Questions in each loop. The loop repeats until one comes back with zero misses.</p>
+    </div>
+    <p id="sum-text" style="margin: 0"></p>
+  </section>
+  <div class="row">
+    <button id="sum-go" class="btn btn-primary" type="button">Start error loop</button>
+  </div>
+  <section class="card">
+    <h3 style="font-size: var(--step-1)">Read these once before the loop</h3>
+    <ul id="sum-missed" class="missed"></ul>
+  </section>
+</main>
+
+<!-- MASTERED -->
+<main id="done" class="wrap" hidden>
+  <section class="card">
+    <p class="eyebrow">Loop cleared with zero misses</p>
+    <p id="done-title" class="burst">Week 3 mastered</p>
+    <div id="done-chain" class="chain num"></div>
+    <div class="stats">
+      <div class="stat"><b id="done-first">7/10</b><span>first try</span></div>
+      <div class="stat"><b id="done-loops">3</b><span>loops run</span></div>
+      <div class="stat"><b id="done-answers">14</b><span>answers given</span></div>
+    </div>
+    <p id="done-text" class="muted" style="margin: 0"></p>
+  </section>
+  <div class="row">
+    <button id="done-next" class="btn btn-primary" type="button">Next week</button>
+    <button id="done-home" class="btn" type="button">All weeks</button>
+  </div>
+</main>
+
+<script>
+/* ---------------------------------------------------------------------
+   Question bank: 130 questions from the NPTEL assignment solutions.
+   week   : "Week 0" … "Week 12"
+   answer : index into options (0 = a, 1 = b, …)
+   Week 12 answers were not officially released when the pack was made.
+--------------------------------------------------------------------- */
+const questions = [
+  { id: 1, week: "Week 0", question: "Which approach in ecology uses models and predictions to simplify reality and identify patterns?",
+    options: ["Theoretical ecology", "Field ecology", "Laboratory ecology", "Descriptive conservation"], answer: 0 },
+  { id: 2, week: "Week 0", question: "Which statement best describes the role of forests in climate regulation?",
+    options: ["Forests store carbon and vegetation influences local temperature and moisture", "Forests prevent all climatic variation", "Forests regulate only animal populations", "Forests affect climate only through visible wildlife"], answer: 0 },
+  { id: 3, week: "Week 0", question: "Genetic diversity refers to:",
+    options: ["Variation among ecosystems", "Variation in ecological roles", "Variation within a species", "Variation among climate zones"], answer: 2 },
+  { id: 4, week: "Week 0", question: "Ecosystem diversity means:",
+    options: ["Diversity of genes within one population", "Variety of ecosystems and habitats across space", "Number of individuals of one species", "Number of economic activities in a region"], answer: 1 },
+  { id: 5, week: "Week 0", question: "Which ecological support is directly connected with food security?",
+    options: ["Pollination and nutrient cycling", "Road construction and industrial output", "Political boundaries and administration", "Urban zoning and traffic control"], answer: 0 },
+  { id: 6, week: "Week 0", question: "Why is pollution difficult to manage in sustainability terms?",
+    options: ["Waste disappears when it leaves human sight", "Pollution may move through air, water, soil, food chains, and living bodies", "Pollution affects only the point where it is released", "Pollution has no connection with ecosystems"], answer: 1 },
+  { id: 7, week: "Week 0", question: "Which are the three pillars of sustainability?",
+    options: ["Genetic, species, and ecosystem sustainability", "Habitat, population, and community sustainability", "Food, water, and climate sustainability", "Environmental, social, and economic sustainability"], answer: 3 },
+  { id: 8, week: "Week 0", question: "What is environmental injustice?",
+    options: ["Equal sharing of environmental benefits and burdens", "A situation where vulnerable communities often bear more pollution, risk, or reduced access to clean resources", "The scientific study of population regulation", "The natural variation of climate across regions"], answer: 1 },
+  { id: 9, week: "Week 0", question: "Functional diversity refers to:",
+    options: ["Variety in ecological roles and traits", "Variety in political institutions", "Variety in land ownership systems", "Variety in human population size"], answer: 0 },
+  { id: 10, week: "Week 0", question: "Which approach in ecology is most directly associated with controlled experiments and systematic manipulation of variables?",
+    options: ["Field ecology", "Laboratory ecology", "Landscape observation", "Social sustainability"], answer: 1 },
+  { id: 11, week: "Week 1", question: "Which of the following is included in invisible biodiversity?",
+    options: ["Mountains and rivers", "Genes, microbes, fungi, soil life, and ecological processes", "Only large animals hidden in forests", "Only plants growing below tree cover"], answer: 1 },
+  { id: 12, week: "Week 1", question: "What does the term \"distribution\" refer to in ecology?",
+    options: ["How organisms reproduce", "How organisms compete", "Where organisms occur", "How organisms obtain food"], answer: 2 },
+  { id: 13, week: "Week 1", question: "How do wetlands contribute to water security?",
+    options: ["By increasing fossil fuel availability", "By storing and filtering water", "By eliminating the need for forests", "By replacing all human water management"], answer: 1 },
+  { id: 14, week: "Week 1", question: "Which statement best describes a habitat?",
+    options: ["A visually attractive natural location", "A fixed geographical point where a species was once recorded", "A place containing only physical conditions", "A functionally suitable setting in which an organism can live"], answer: 3 },
+  { id: 15, week: "Week 1", question: "Why is ecology not identical to environmental concern?",
+    options: ["Ecology rejects ethical thinking completely", "Environmental concern is based only on laboratory experiments", "Ecology deals only with non-living matter", "Ecology provides scientific evidence and explanation, while concern is a social or ethical response"], answer: 3 },
+  { id: 16, week: "Week 1", question: "Which of the following is an example of a community interaction?",
+    options: ["Rainfall entering the soil", "Temperature changing across seasons", "Predation between two species", "A rock weathering over time"], answer: 2 },
+  { id: 17, week: "Week 1", question: "What is the biosphere?",
+    options: ["A single habitat suitable for one species", "The global sum of life and living systems", "A local group of interacting populations", "A laboratory model of ecological processes"], answer: 1 },
+  { id: 18, week: "Week 1", question: "A community in ecology means:",
+    options: ["Populations of different species living together and interacting", "Individuals of one species competing in one location", "Physical conditions without living organisms", "A single organism responding to environmental stress"], answer: 0 },
+  { id: 19, week: "Week 1", question: "What are ecosystem services?",
+    options: ["The benefits people obtain from ecosystems", "The laws created to protect forests", "The instruments used for field surveys", "The number of species in an area"], answer: 0 },
+  { id: 20, week: "Week 1", question: "At the organism level, ecology focuses on:",
+    options: ["A single individual living being", "All ecosystems on Earth", "Only non-living environmental conditions", "The total number of species in a biome"], answer: 0 },
+  { id: 21, week: "Week 2", question: "What does functional diversity refer to?",
+    options: ["The total market value of ecosystem products", "Different species performing different ecological roles", "The number of development projects in a region", "The use of one indicator for multiple systems"], answer: 1 },
+  { id: 22, week: "Week 2", question: "What is a trade-off in sustainability analysis?",
+    options: ["A situation where real benefits and real harms occur together", "A decision that supports all three pillars equally", "A case where ecological damage has no social effect", "A method for avoiding evidence-based assessment"], answer: 0 },
+  { id: 23, week: "Week 2", question: "What is the main role of regulating services?",
+    options: ["Reducing risks and stabilising conditions through ecological processes", "Supplying only direct material goods", "Replacing social indicators in development planning", "Measuring ecosystem value through one composite score"], answer: 0 },
+  { id: 24, week: "Week 2", question: "What does environmental sustainability primarily involve?",
+    options: ["Protecting ecological processes, biodiversity, resources, and resilience", "Increasing production without measuring ecological effects", "Ensuring compensation after environmental damage", "Treating nature only as a source of market products"], answer: 0 },
+  { id: 25, week: "Week 2", question: "Why can wetlands be understood as natural infrastructure?",
+    options: ["They store water, slow flows, filter contaminants, and support habitat", "They are empty spaces suitable for quick conversion", "They only provide scenic value to nearby residents", "Their services can always be fully replaced by drainage systems"], answer: 0 },
+  { id: 26, week: "Week 2", question: "What helped many early societies understand environmental limits?",
+    options: ["Direct ecological feedback from land, water, seasons, and resource use", "International environmental agreements", "Industrial monitoring systems", "Modern composite indicators"], answer: 0 },
+  { id: 27, week: "Week 2", question: "What should a good sustainability indicator do?",
+    options: ["Count whatever is easiest to measure", "Replace interpretation with numerical certainty", "Ignore context to allow simple comparison", "Represent important realities, be understandable, and support action"], answer: 3 },
+  { id: 28, week: "Week 2", question: "What made industrialization different from earlier forms of development?",
+    options: ["It removed the need for natural resources", "It made ecological damage immediately visible everywhere", "It reduced the distance between consumption and resource sources", "It increased speed, scale, and distance, making damage easier to hide"], answer: 3 },
+  { id: 29, week: "Week 2", question: "What does an ecological threshold indicate?",
+    options: ["A point where social benefits become impossible to measure", "A market price at which ecosystem services become profitable", "A limit beyond which ecological change may become unsafe or difficult to reverse", "A planning method that removes uncertainty from sustainability decisions"], answer: 2 },
+  { id: 30, week: "Week 2", question: "What does natural capital accounting emphasise?",
+    options: ["Nature should be valued only when it produces goods for markets", "Forests, soils, water systems, wetlands, and biodiversity have real value", "Economic decisions should ignore ecological functions", "Market price always captures the full value of ecosystems"], answer: 1 },
+  { id: 31, week: "Week 3", question: "Why do specialist species often decline earlier under ecological pressure?",
+    options: ["They can easily shift food and habitat use", "They depend on narrow habitat, food, or breeding conditions", "They reproduce faster than generalist species", "They are always disturbance-tolerant"], answer: 1 },
+  { id: 32, week: "Week 3", question: "What does habitat fragmentation involve?",
+    options: ["Only pollution of a single water body", "Breaking a natural landscape into smaller isolated parcels within a human-dominated matrix", "Complete removal of all species from a region", "Natural growth of continuous forest corridors"], answer: 1 },
+  { id: 33, week: "Week 3", question: "Why is soil erosion a habitat degradation problem?",
+    options: ["It adds nutrients to all rivers", "It increases topsoil depth", "It removes biologically active topsoil and can cause sedimentation in aquatic habitats", "It prevents all landslides permanently"], answer: 2 },
+  { id: 34, week: "Week 3", question: "What are ghost nets?",
+    options: ["Nets used to protect wildlife from predators", "Lost, abandoned, or discarded fishing nets that continue trapping marine life", "Nets used only in freshwater farming", "Natural coral structures that trap plastic"], answer: 1 },
+  { id: 35, week: "Week 3", question: "Why can a renewable biological resource become effectively non-renewable?",
+    options: ["Because all renewable resources stop reproducing naturally", "Because legal use automatically destroys all species", "Because removal may exceed the resource's capacity to regenerate", "Because only non-living resources can be harvested"], answer: 2 },
+  { id: 36, week: "Week 3", question: "What is a native species?",
+    options: ["A species introduced for human use", "A species that survives only in captivity", "A species that occurs naturally in a region and is part of its long-term ecological community", "Any species that spreads aggressively"], answer: 2 },
+  { id: 37, week: "Week 3", question: "What is the key ecological principle behind sustainable use?",
+    options: ["Removal may exceed regeneration if demand is high", "Removal must remain below regeneration capacity", "Any legal extraction is sustainable", "Biological renewal is unaffected by habitat quality"], answer: 1 },
+  { id: 38, week: "Week 3", question: "Why is light pollution ecologically significant?",
+    options: ["It affects only electricity consumption", "It improves all nocturnal behaviour", "It alters natural day-night conditions, orientation, timing, and activity patterns", "It prevents all insect movement"], answer: 2 },
+  { id: 39, week: "Week 3", question: "Why are energy systems described as having ecological footprints?",
+    options: ["They require only sunlight and wind", "They require land, water, materials, mines, dams, roads, drilling, or transmission infrastructure", "They never cause habitat change", "They affect only urban areas"], answer: 1 },
+  { id: 40, week: "Week 3", question: "What is overexploitation?",
+    options: ["Any use of biological resources", "Use of biological resources beyond their capacity to regenerate", "Complete protection of all species from use", "Natural increase in wildlife populations"], answer: 1 },
+  { id: 41, week: "Week 4", question: "What does overexploitation mean?",
+    options: ["The movement of species into new habitats", "Taking biological resources faster than nature can replace them", "The recycling of nutrients by decomposers", "The restoration of extinct species through cloning"], answer: 1 },
+  { id: 42, week: "Week 4", question: "What is the classical period used for calculating climate averages?",
+    options: ["5 years", "10 years", "20 years", "30 years"], answer: 3 },
+  { id: 43, week: "Week 4", question: "Why are specialist species especially vulnerable to climate change?",
+    options: ["They always have large home ranges", "They reproduce faster than generalists", "They have narrow ecological requirements and few alternatives when conditions change", "They are unaffected by changes in food quality"], answer: 2 },
+  { id: 44, week: "Week 4", question: "Under Shelford's Law of Tolerance, what happens when an ecological condition falls outside an organism's coping capacity?",
+    options: ["The population reaches its optimum level", "The species immediately adapts genetically", "The species shifts into its most suitable range", "The population drops to zero"], answer: 3 },
+  { id: 45, week: "Week 4", question: "What does the IUCN Red List category Extinct in the Wild mean?",
+    options: ["The species has many stable wild populations", "The species has no known individuals anywhere", "The species survives only in zoos, seed banks, or other human-managed settings", "The species is common but declining slowly"], answer: 2 },
+  { id: 46, week: "Week 4", question: "Which set correctly identifies major climatic changes affecting biodiversity?",
+    options: ["Soil erosion, mining, hunting, and disease", "Rising temperature, changing rainfall patterns, more frequent extremes, and shifting seasons", "Urbanisation, overgrazing, logging, and fishing", "Mutation, migration, predation, and reproduction"], answer: 1 },
+  { id: 47, week: "Week 4", question: "What is genetic rescue?",
+    options: ["Introducing individuals from another population to increase genetic diversity and reduce inbreeding problems", "Removing all predators from a protected area", "Converting a dryland into agricultural land", "Increasing pollutant concentration in predators"], answer: 0 },
+  { id: 48, week: "Week 4", question: "What is eutrophication?",
+    options: ["Rapid algal growth triggered by excess nutrients, leading to oxygen decline and harm to aquatic life", "Movement of animals toward cooler latitudes", "Recovery of forests after fire", "A process of genetic rescue in small populations"], answer: 0 },
+  { id: 49, week: "Week 4", question: "What does the Allee effect describe?",
+    options: ["Increased survival when nutrient runoff is high", "Reduced shell-building due to seawater chemistry", "Faster adaptation in fragmented landscapes", "Failure of survival or reproduction when population size or density becomes too low"], answer: 3 },
+  { id: 50, week: "Week 4", question: "In a nutrient cycle, what role do decomposers perform?",
+    options: ["They prevent nutrients from entering food webs", "They convert all nutrients into fossil fuels", "They remove producers from ecosystems", "They break down dead material and wastes, returning nutrients to the nutrient pool"], answer: 3 },
+  { id: 51, week: "Week 5", question: "What is human-wildlife conflict?",
+    options: ["A situation where wildlife needs or behaviour clash with human interests and lead to damage, fear, injury, loss, or retaliation", "Any peaceful interaction between humans and wildlife", "The presence of wildlife in a landscape without any cost", "A condition where all species remain inside protected areas"], answer: 0 },
+  { id: 52, week: "Week 5", question: "Why can a protected area alone fail to secure a species over time?",
+    options: ["Protected areas always reduce biodiversity", "Species cannot survive inside reserves", "Human activity is absent around all reserves", "Many species move beyond reserves for food, water, mates, or seasonal habitat"], answer: 3 },
+  { id: 53, week: "Week 5", question: "What is option value in biodiversity valuation?",
+    options: ["The value of replacing ecosystems with infrastructure", "The value of using only one species now", "The benefit of keeping biodiversity available for possible future uses", "The cost of removing biodiversity from markets"], answer: 2 },
+  { id: 54, week: "Week 5", question: "What are examples of non-timber forest products?",
+    options: ["Fruits, nuts, resins, medicinal plants, bamboo, and fibres", "Roads, drains, fences, and bridges", "Coal, cement, steel, and petroleum", "Cars, buildings, markets, and pipelines"], answer: 0 },
+  { id: 55, week: "Week 5", question: "What is microclimate regulation by vegetation?",
+    options: ["Reducing heat stress by shade, lower surface temperatures, and humidity influence", "Increasing heat stress by removing tree cover", "Preventing all seasonal variation in climate", "Replacing water regulation with pest regulation"], answer: 0 },
+  { id: 56, week: "Week 5", question: "Which set represents cultural services of biodiversity?",
+    options: ["Flood control, pollination, soil structure, and carbon storage", "Recreation, inspiration, education, heritage, and shared public spaces", "Crop raiding, livestock loss, property damage, and fear", "Compensation, insurance, fences, and early warnings"], answer: 1 },
+  { id: 57, week: "Week 5", question: "What is a major limitation of fortress thinking in conservation?",
+    options: ["Not all biodiversity can be isolated from people", "It gives too much importance to shared landscapes", "It ignores the need for protected areas altogether", "It assumes people and wildlife must always interact directly"], answer: 0 },
+  { id: 58, week: "Week 5", question: "How does biodiversity help regulate water in a landscape?",
+    options: ["By stopping rainfall from entering the soil", "By increasing surface runoff in simplified landscapes", "By influencing infiltration, storage, and runoff through vegetation, roots, and living soils", "By eliminating wetlands from human-used areas"], answer: 2 },
+  { id: 59, week: "Week 5", question: "Which factor can make coexistence difficult?",
+    options: ["Perfectly equal sharing of all conservation costs", "Inadequate planning of roads, settlements, farms, or infrastructure", "Complete absence of ecological uncertainty", "Guaranteed support from all institutions"], answer: 1 },
+  { id: 60, week: "Week 5", question: "How can biodiversity support physical health?",
+    options: ["By increasing polluted water flow", "By removing all disease risk permanently", "By replacing all healthcare systems", "By filtering pollutants, improving air and water quality, and supporting stable ecological regulation"], answer: 3 },
+  { id: 61, week: "Week 6", question: "Which species concept defines species mainly by niche, resources, and environmental conditions used?",
+    options: ["Evolutionary species concept", "Ecological species concept", "Biological species concept", "Morphological species concept"], answer: 1 },
+  { id: 62, week: "Week 6", question: "Habitat quality depends mainly on:",
+    options: ["Legal status alone", "Whether the habitat appears on a map", "Food, water, shelter, breeding sites, and low disturbance", "Whether only one species is present"], answer: 2 },
+  { id: 63, week: "Week 6", question: "Genetic diversity refers to:",
+    options: ["Variation in hereditary information among individuals and populations", "Difference in species composition between two ecosystems", "Number of habitats across a landscape", "Number of visible traits in a field guide"], answer: 0 },
+  { id: 64, week: "Week 6", question: "A biodiversity hotspot combines which three features?",
+    options: ["High rainfall, high elevation, and high productivity", "High abundance, low disturbance, and uniform habitat", "High genetic similarity, low endemism, and low threat", "High species richness, high endemism, and significant threat"], answer: 3 },
+  { id: 65, week: "Week 6", question: "Which barrier acts before fertilization?",
+    options: ["Hybrid sterility", "Hybrid breakdown", "Embryo inviability", "Temporal isolation"], answer: 3 },
+  { id: 66, week: "Week 6", question: "Allelopathy occurs when:",
+    options: ["Animals form groups to avoid predators", "One organism releases chemicals that inhibit another", "Species shift upward in altitude because of warming", "Adjacent populations interbreed around a barrier"], answer: 1 },
+  { id: 67, week: "Week 6", question: "Gamma diversity refers to:",
+    options: ["Diversity within one wetland", "Total diversity across a larger region", "Evenness of individuals among species", "Fitness differences between populations"], answer: 1 },
+  { id: 68, week: "Week 6", question: "What does biodiversity mean?",
+    options: ["Only the number of large animals in a forest", "Only the number of protected areas in a landscape", "Only variation in climate and soil", "The variety of life within species, among species, and among ecosystems"], answer: 3 },
+  { id: 69, week: "Week 6", question: "What is speciation?",
+    options: ["The seasonal movement of individuals between habitats", "The increase in population size within one area", "The grouping of organisms according to body colour", "The splitting of one lineage into two or more independently evolving species"], answer: 3 },
+  { id: 70, week: "Week 6", question: "Which idea best describes a species as a scientific concept?",
+    options: ["A fixed sentence that applies equally to every organism", "A category based only on visible form", "A flexible tool that may emphasize interbreeding, form, ancestry, or niche", "A group that must always be geographically isolated"], answer: 2 },
+  { id: 71, week: "Week 7", question: "Simple random sampling gives:",
+    options: ["Larger units a higher chance of selection", "Every sampling unit an equal chance of selection", "Only remote areas a chance of selection", "Every kth unit after a fixed start without randomness"], answer: 1 },
+  { id: 72, week: "Week 7", question: "Stratified sampling is especially useful when:",
+    options: ["The whole landscape is uniform", "Animal density varies across habitat types", "Complete census is always possible", "Sampling units cannot be mapped"], answer: 1 },
+  { id: 73, week: "Week 7", question: "Which is an example of equipment bias?",
+    options: ["Missed detections due to low observer skill", "Faulty calibration of a measuring device", "Dense vegetation hiding animals", "Unrealistic movement assumptions in a model"], answer: 1 },
+  { id: 74, week: "Week 7", question: "Bias in wildlife monitoring means:",
+    options: ["Random scatter around a true value", "Systematic deviation from the true value", "Higher cost of data collection", "Larger sample size than required"], answer: 1 },
+  { id: 75, week: "Week 7", question: "In camera-trap based tiger estimation, individual tigers can be identified by:",
+    options: ["Herd size", "Nesting banks", "Unique stripe patterns", "Flowering season"], answer: 2 },
+  { id: 76, week: "Week 7", question: "Which pair represents losses from a population?",
+    options: ["Natality and immigration", "Births and recruitment", "Mortality and emigration", "Density and dispersal"], answer: 2 },
+  { id: 77, week: "Week 7", question: "A population in wildlife studies is best understood as which of the following?",
+    options: ["All species living in a habitat during one season", "Individuals of the same species in a defined area that are capable of interbreeding", "All animals counted during a field survey", "Individuals of different species using the same corridor"], answer: 1 },
+  { id: 78, week: "Week 7", question: "Which pair represents gains to a population?",
+    options: ["Births and immigration", "Deaths and emigration", "Births and deaths", "Immigration and emigration"], answer: 0 },
+  { id: 79, week: "Week 7", question: "PPS sampling means:",
+    options: ["Larger sampling units receive a higher chance of selection", "Every unit has the same chance regardless of size", "Only point transects are used", "Animals are removed after each capture"], answer: 0 },
+  { id: 80, week: "Week 7", question: "Sampling intensity is calculated as:",
+    options: ["Total animals divided by total area", "Sample units divided by total population units", "Marked animals divided by recaptured animals", "Detection distance divided by transect length"], answer: 1 },
+  { id: 81, week: "Week 8", question: "Which statement best describes conservation genetics?",
+    options: ["It studies only visible animal behaviour in protected areas", "It replaces habitat management with captive breeding", "It applies genetic tools to biodiversity protection", "It measures only the age structure of populations"], answer: 2 },
+  { id: 82, week: "Week 8", question: "What is allele frequency?",
+    options: ["A fixed number of individuals in a population", "A measure of animal movement across habitats", "A record of all chromosomes in one cell", "The proportion of a particular allele among all copies of that gene"], answer: 3 },
+  { id: 83, week: "Week 8", question: "What are chromosomes?",
+    options: ["Short-term environmental pressures on wildlife", "Long DNA-protein structures carrying many genes", "Behavioural adaptations learned during life", "Statistical outputs of viability models"], answer: 1 },
+  { id: 84, week: "Week 8", question: "What does fitness mean in evolutionary terms?",
+    options: ["Physical strength or speed alone", "Relative reproductive success across generations", "Ability to occupy the largest territory", "Ability to avoid all competition"], answer: 1 },
+  { id: 85, week: "Week 8", question: "What is the founder effect?",
+    options: ["A selection process where predators remove weak individuals", "A condition where all individuals have identical chromosomes", "A disease caused by increased heterozygosity", "A new population starting from a few individuals and carrying only part of the original genetic diversity"], answer: 3 },
+  { id: 86, week: "Week 8", question: "Which perspective asks what external pressures made a population small?",
+    options: ["Small population paradigm", "Genetic rescue model", "Declining population paradigm", "Outbreeding enhancement model"], answer: 2 },
+  { id: 87, week: "Week 8", question: "Which inheritance pattern occurs when both alleles are fully expressed?",
+    options: ["Complete dominance", "Incomplete dominance", "Codominance", "Segregation"], answer: 2 },
+  { id: 88, week: "Week 8", question: "Which statement correctly describes phenotype?",
+    options: ["It is the hidden genetic constitution of an organism", "It is the observable expression of traits", "It is the total genetic variation of a population", "It is the location of a gene on a chromosome"], answer: 1 },
+  { id: 89, week: "Week 8", question: "What is the Allee effect?",
+    options: ["A condition where large populations always decline", "A process where all mutations improve fitness", "A method for calculating allele frequency", "Lower survival or reproduction in very small populations because density is too low"], answer: 3 },
+  { id: 90, week: "Week 8", question: "What is genetic rescue?",
+    options: ["A method of counting chromosomes under a microscope", "Introduction of new genetic variation into small, isolated populations to reduce inbreeding depression and increase fitness", "Removal of all predators from a protected area", "Use of only visually rare animals for captive breeding"], answer: 1 },
+  { id: 91, week: "Week 9", question: "What does infectivity mean?",
+    options: ["Ability of a pathogen to establish infection after exposure", "Severity of disease caused after symptoms appear", "Probability that a diseased animal dies", "Number of carcasses found in an outbreak zone"], answer: 0 },
+  { id: 92, week: "Week 9", question: "Which statement best describes wildlife health in conservation management?",
+    options: ["A fixed condition measured only by absence of visible injury", "A veterinary issue unrelated to population survival", "A dynamic state involving normal function at individual, population, and ecosystem levels", "A measure based only on body size and population count"], answer: 2 },
+  { id: 93, week: "Week 9", question: "What is a dead-end host?",
+    options: ["A host that increases pathogen abundance", "A host that becomes infected but does not sustain further transmission", "A host that always acts as a biological vector", "A host that supports the complete adult parasite cycle"], answer: 1 },
+  { id: 94, week: "Week 9", question: "What is disease in wildlife health assessment?",
+    options: ["A condition that disrupts normal function and may affect behavior, physiology, reproduction, or survival", "A temporary injury that always results from external trauma", "A normal ecological process that never affects conservation outcomes", "A population increase caused by improved habitat quality"], answer: 0 },
+  { id: 95, week: "Week 9", question: "Which action is central to anthrax management in wildlife areas?",
+    options: ["Opening carcasses immediately for visual diagnosis", "Careful carcass handling to reduce environmental contamination", "Increasing scavenger access to remove infected remains", "Moving infected carcasses to shared grazing areas"], answer: 1 },
+  { id: 96, week: "Week 9", question: "Which description best fits an acute disease?",
+    options: ["Slow onset with subtle signs over many years", "Rapid onset, short duration, and possible sudden mortality events", "Low disease burden with no visible population impact", "Permanent genetic condition passed through inheritance only"], answer: 1 },
+  { id: 97, week: "Week 9", question: "What does sporadic disease occurrence mean?",
+    options: ["Disease that persists regularly in a local reservoir", "Irregular and isolated disease occurrence without a predictable pattern", "Sudden mass mortality across multiple countries", "Continuous spread through every susceptible host"], answer: 1 },
+  { id: 98, week: "Week 9", question: "What is horizontal transmission?",
+    options: ["Transmission between individuals of the same generation", "Transmission only through inherited genetic traits", "Transmission only through contaminated soil", "Transmission only from domestic animals to wildlife"], answer: 0 },
+  { id: 99, week: "Week 9", question: "Which is an example of a precipitating factor?",
+    options: ["Old age lowering resistance over time", "Strong immunity reducing spread", "Migration stress triggering disease expression in already susceptible animals", "Genetic diversity improving population resilience"], answer: 2 },
+  { id: 100, week: "Week 9", question: "What does virulence describe?",
+    options: ["Number of species living in the disease area", "Proportion of animals with background immunity", "Severity of disease caused by a pathogen", "Amount of rainfall before an outbreak"], answer: 2 },
+  { id: 101, week: "Week 10", question: "Why should captive enclosures be habitat-like?",
+    options: ["To reduce documentation requirements", "To support natural movement, behaviour, welfare, health, and breeding", "To make all species follow the same diet", "To avoid scientific management"], answer: 1 },
+  { id: 102, week: "Week 10", question: "Why is representative sampling important in ex-situ conservation?",
+    options: ["It ensures only the best-looking individuals are collected", "It helps capture genetic variation and avoid loss of alleles", "It prevents the need for records", "It replaces future restoration planning"], answer: 1 },
+  { id: 103, week: "Week 10", question: "Why are compact or circular reserves generally preferred where feasible?",
+    options: ["They are easier to convert into zoos", "They have higher edge-to-area pressure", "They usually reduce edge effects and outside disturbance", "They prevent natural dispersal"], answer: 2 },
+  { id: 104, week: "Week 10", question: "A fragmented landscape with isolated wildlife populations mainly requires which management focus?",
+    options: ["Connectivity planning", "Captive display planning", "Scenic viewpoint development", "Uniform fencing across all habitats"], answer: 0 },
+  { id: 105, week: "Week 10", question: "Which group correctly represents protected-area categories used for in-situ conservation in India?",
+    options: ["National Park, Sanctuary, Conservation Reserve, and Community Reserve", "Zoo, aquarium, seed bank, and cryobank", "Arboretum, bambusetum, gene bank, and rescue centre", "Nursery, enclosure, corridor map, and field camp"], answer: 0 },
+  { id: 106, week: "Week 10", question: "Pollination, seed dispersal, predation, decomposition, and nutrient cycling are important because they represent which aspect of biodiversity management?",
+    options: ["Revenue generation", "Boundary demarcation", "Ecological function", "Species display"], answer: 2 },
+  { id: 107, week: "Week 10", question: "What does ex-situ conservation involve?",
+    options: ["Maintaining species only through community grazing systems", "Protecting species only by expanding natural corridors", "Preventing all movement of species between facilities", "Moving species or genetic material to designated facilities outside natural habitats"], answer: 3 },
+  { id: 108, week: "Week 10", question: "Why can reserved forests be strategically useful for faster sanctuary notification?",
+    options: ["They require no ecological significance", "They are automatically free from all human use", "They are suitable only for ex-situ conservation", "Their land status, boundaries, records, and rights position are often already well structured or documented"], answer: 3 },
+  { id: 109, week: "Week 10", question: "What is the main function of studbooks in conservation breeding?",
+    options: ["They record ancestry, births, deaths, transfers, and breeding history to guide management", "They replace veterinary care", "They identify tourist routes inside zoos", "They eliminate the need for genetic diversity"], answer: 0 },
+  { id: 110, week: "Week 10", question: "Why is ex-situ conservation described as an insurance strategy?",
+    options: ["It guarantees automatic reintroduction success", "It prevents immediate extinction in high-risk cases and preserves individuals or genetic material outside threatened habitats", "It removes the need for genetic management", "It works best when habitat loss continues unchecked"], answer: 1 },
+  { id: 111, week: "Week 11", question: "What is the main purpose of PIT tags?",
+    options: ["To sedate animals during transport", "To create artificial movement routes", "To prevent conflict with livestock", "To allow long-term individual identification"], answer: 3 },
+  { id: 112, week: "Week 11", question: "Which practice is appropriate while physically handling small reptiles?",
+    options: ["Holding only the tail to restrict movement", "Supporting the body and avoiding squeezing", "Keeping the animal exposed to heat for long periods", "Applying pressure to the abdomen for control"], answer: 1 },
+  { id: 113, week: "Week 11", question: "Which statement reflects the central caution in habitat management?",
+    options: ["Fire and grazing always damage habitats", "Water provisioning is always beneficial", "Management tools can help or harm depending on timing, intensity, location, and monitoring", "Plantation is automatically equal to restoration"], answer: 2 },
+  { id: 114, week: "Week 11", question: "When is a jab stick most suitable?",
+    options: ["When the animal is distant and hidden in dense vegetation", "When the animal is approachable, confined, or partially restrained", "When no trained personnel are available", "When the animal must be monitored from the air"], answer: 1 },
+  { id: 115, week: "Week 11", question: "Which type of wildfire burns treetops and can spread rapidly?",
+    options: ["Ground fire", "Surface fire", "Crown fire", "Prescribed fire"], answer: 2 },
+  { id: 116, week: "Week 11", question: "Which form of restraint is based on training, conditioning, or desensitisation?",
+    options: ["Behavioural restraint", "Physical restraint", "Chemical restraint", "Mechanical restraint"], answer: 0 },
+  { id: 117, week: "Week 11", question: "Which form of restraint uses cages, traps, poles, nets, or chutes?",
+    options: ["Chemical restraint", "Behavioural restraint", "Physical restraint", "Mechanical restraint"], answer: 3 },
+  { id: 118, week: "Week 11", question: "Which statement best describes a Ketch-All pole?",
+    options: ["It is used to create long-term animal enclosures", "It is a device for measuring animal temperature", "It provides short-distance control while keeping handlers away", "It is used to guide animals into pitfall traps"], answer: 2 },
+  { id: 119, week: "Week 11", question: "Which drug group immobilises animals through paralysis of voluntary muscles without providing sedation or analgesia?",
+    options: ["CNS depressants", "Tranquillisers", "Dissociatives", "Neuromuscular blockers"], answer: 3 },
+  { id: 120, week: "Week 11", question: "Which is a physical effect of wildfire?",
+    options: ["Endocrine disruption", "Hydrophobic soil reducing infiltration and increasing runoff", "Dart leakage during immobilisation", "Formation of ghost nets"], answer: 1 },
+  { id: 121, week: "Week 12", question: "What should fences do in wildlife-road mitigation?",
+    options: ["Block all animal movement permanently", "Guide animals toward safe crossing structures", "Increase vehicle speed near hotspots", "Replace monitoring after construction"], answer: 1 },
+  { id: 122, week: "Week 12", question: "Which of the following is an example of linear infrastructure?",
+    options: ["Wetland food web", "Railway", "Tiger population", "Carbon stock"], answer: 1 },
+  { id: 123, week: "Week 12", question: "What is the barrier effect of a road?",
+    options: ["A road becomes wider after repeated use", "Animals are attracted to vegetation along road edges", "Animals avoid crossing, reducing movement between habitat areas", "Roadside soil becomes more fertile due to runoff"], answer: 2 },
+  { id: 124, week: "Week 12", question: "What is Total Economic Value designed to capture?",
+    options: ["Only direct market income from biodiversity", "Only tourism earnings from protected areas", "Both use and non-use values", "Only the cost of artificial habitat restoration"], answer: 2 },
+  { id: 125, week: "Week 12", question: "Which valuation method uses surveys to ask willingness to pay for conservation?",
+    options: ["Market price method", "Benefits transfer method", "Contingent valuation method", "Damage cost avoided method"], answer: 2 },
+  { id: 126, week: "Week 12", question: "What is linear infrastructure?",
+    options: ["Facilities that extend as lines across landscapes", "A protected-area zoning system based on circles", "A method for valuing non-use benefits", "A seasonal migration pattern of animals"], answer: 0 },
+  { id: 127, week: "Week 12", question: "What is an oil spill?",
+    options: ["A gradual increase in salt concentration in coastal water", "The release of liquid petroleum hydrocarbons into the environment", "The natural movement of sediments along a shoreline", "The biological decay of organic matter in wetlands"], answer: 1 },
+  { id: 128, week: "Week 12", question: "Which structure is designed for arboreal mammals and some reptiles?",
+    options: ["Canopy bridge", "In-situ burn area", "Skimmer channel", "Benefits-transfer site"], answer: 0 },
+  { id: 129, week: "Week 12", question: "Which mitigation hierarchy step means keeping infrastructure away from critical habitat where possible?",
+    options: ["Restore", "Offset", "Minimise", "Avoid"], answer: 3 },
+  { id: 130, week: "Week 12", question: "Which compounds are especially associated with toxicity in petroleum oil?",
+    options: ["Biogenic sugars", "Pyrogenic salts", "Aromatic hydrocarbons, especially PAHs", "Soil nutrients"], answer: 2 }
+];
+
+const WEEK_TITLES = {
+  0: "Practice set: ecology, biodiversity and sustainability basics",
+  1: "Ecology, biodiversity and sustainability: the foundations",
+  2: "Sustainable development, ecosystem services and indicators",
+  3: "Threats: population, habitat loss, overuse, invasives, pollution",
+  4: "Climate change, biogeochemical cycles and extinction",
+  5: "Coexistence and human-wildlife conflict",
+  6: "Species concepts, diversity, habitats and behaviour",
+  7: "Counting wildlife: census, sampling and transects",
+  8: "Wildlife genetics, viability and inbreeding",
+  9: "Wildlife diseases and their management",
+  10: "Biodiversity management: ex situ, in situ, sanctuaries",
+  11: "Capture and handling, habitat work, wildfires, plastics",
+  12: "Oil spills, linear infrastructure and economic valuation"
+};
+const WEEK_NUMS = Object.keys(WEEK_TITLES).map(Number);
+const LETTERS = ["A", "B", "C", "D"];
+
+const weekNum = q => parseInt(q.week.replace(/\D+/g, ""), 10);
+const byId = new Map(questions.map(q => [q.id, q]));
+
+/* ---------- storage (fails soft: private windows, blocked storage) ---------- */
+const KEY = "bio-recall-v1";
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
+}
+let store = load();
+store.progress = store.progress || {};
+store.prefs = Object.assign({ shuffleOptions: true, autoAdvance: true }, store.prefs || {});
+store.session = store.session || null;
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* keep working in memory */ }
+}
+
+/* ---------- helpers ---------- */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const $ = id => document.getElementById(id);
+function el(tag, attrs, ...kids) {
+  const n = document.createElement(tag);
+  for (const k in attrs || {}) {
+    if (k === "class") n.className = attrs[k];
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), attrs[k]);
+    else n.setAttribute(k, attrs[k]);
+  }
+  for (const c of kids) if (c != null) n.append(c);
+  return n;
+}
+const progressKey = s => s.scope === "grand" ? "grand" : "w" + s.week;
+const scopeName = s => s.scope === "grand" ? "Grand Test · all 130" : "Week " + s.week;
+function loopName(s, loop) {
+  if (loop === 1) return s.scope === "grand" ? "Grand shuffle" : "Rapid fire";
+  return (s.scope === "grand" ? "Final error loop " : "Error loop ") + (loop - 1);
+}
+function show(screen) {
+  for (const id of ["home", "quiz", "summary", "done"]) $(id).hidden = id !== screen;
+  window.scrollTo(0, 0);
+}
+const masteredWeeks = () => WEEK_NUMS.filter(w => store.progress["w" + w] && store.progress["w" + w].mastered);
+
+/* ---------- home ---------- */
+function renderHome() {
+  const s = store.session;
+  const done = masteredWeeks();
+  $("mastered-count").textContent = done.length;
+
+  const strip = $("strip");
+  strip.replaceChildren(...WEEK_NUMS.map(w => {
+    const going = s && s.scope === "week" && s.week === w;
+    return el("span", { class: done.includes(w) ? "done" : going ? "going" : "", title: "Week " + w });
+  }));
+
+  // Resume banner
+  $("resume").hidden = !s;
+  if (s) {
+    $("resume-label").textContent = scopeName(s) + " · " + loopName(s, s.loop);
+    $("resume-detail").textContent = s.phase === "summary"
+      ? s.wrongs.length + " missed, ready for the next loop"
+      : "Question " + Math.min(s.index + 1, s.queue.length) + " of " + s.queue.length;
+  }
+
+  // Grand test
+  const all = done.length === WEEK_NUMS.length;
+  const g = store.progress.grand;
+  $("grand").classList.toggle("ready", all);
+  $("grand-note").textContent = g && g.mastered
+    ? "Mastered. First try " + g.firstTry + "/" + g.size + ", cleared in " + g.loops + " loops. Run it again to stay sharp."
+    : all
+      ? "All 13 weeks mastered. Every question, fully shuffled, then error loops until nothing is left."
+      : "Best after all 13 weeks are mastered (" + done.length + "/13 so far). Every question, fully shuffled, then error loops until nothing is left.";
+
+  // Week cards
+  $("weeks").replaceChildren(...WEEK_NUMS.map(w => {
+    const p = store.progress["w" + w];
+    const going = s && s.scope === "week" && s.week === w;
+    const count = questions.filter(q => weekNum(q) === w).length;
+    const pill = p && p.mastered ? el("span", { class: "pill done" }, "Mastered")
+      : going ? el("span", { class: "pill going" }, "In progress")
+      : el("span", { class: "pill" }, "New");
+    let meta = count + " questions";
+    if (p && p.mastered) meta += " · first try " + p.firstTry + "/" + p.size + " · " + p.loops + (p.loops === 1 ? " loop" : " loops");
+    if (w === 0) meta += " · practice";
+    if (w === 12) meta += " · unofficial answers";
+    return el("li", null, el("button", {
+      class: "week", type: "button",
+      onclick: () => startSession("week", w)
+    },
+      el("span", { class: "week-num" }, "Week " + w),
+      pill,
+      el("span", { class: "week-title" }, WEEK_TITLES[w]),
+      el("span", { class: "week-meta num" }, meta)
+    ));
+  }));
+
+  $("opt-shuffle").checked = store.prefs.shuffleOptions;
+  $("opt-auto").checked = store.prefs.autoAdvance;
+  show("home");
+}
+
+/* ---------- session engine ---------- */
+let advanceTimer = null;
+
+function startSession(scope, week) {
+  const pool = scope === "grand" ? questions : questions.filter(q => weekNum(q) === week);
+  store.session = {
+    scope, week: scope === "grand" ? null : week,
+    phase: "quiz",
+    loop: 1,
+    queue: shuffle(pool.map(q => q.id)),
+    index: 0,
+    wrongs: [],
+    correct: 0,
+    streak: 0,
+    answers: 0,
+    history: [],
+    order: null, orderFor: null, picked: null
+  };
+  save();
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const s = store.session;
+  const q = byId.get(s.queue[s.index]);
+  if (s.orderFor !== q.id) {
+    s.order = store.prefs.shuffleOptions ? shuffle([0, 1, 2, 3]) : [0, 1, 2, 3];
+    s.orderFor = q.id;
+    s.picked = null;
+    save();
+  }
+
+  const tag = $("loop-tag");
+  tag.textContent = loopName(s, s.loop);
+  tag.classList.toggle("err", s.loop > 1);
+  $("scope-label").textContent = scopeName(s);
+
+  $("qmeta").replaceChildren(...[
+    el("span", { class: "chip" }, q.week),
+    s.loop > 1 ? el("span", { class: "chip warn" }, "Missed before") : null,
+    weekNum(q) === 12 ? el("span", { class: "chip" }, "Unofficial answer") : null
+  ].filter(Boolean));
+  $("qtext").textContent = q.question;
+  $("options").replaceChildren(...s.order.map((optIdx, i) => el("li", null,
+    el("button", { class: "opt", type: "button", "data-i": i, onclick: () => answer(i) },
+      el("span", { class: "key" }, LETTERS[i]),
+      el("span", { class: "txt" }, q.options[optIdx])
+    )
+  )));
+  $("feedback").hidden = true;
+  updateProgress();
+
+  if (s.picked !== null) paintAnswer(false); // resumed mid-question after answering
+  else setNext(false);
+  show("quiz");
+}
+
+function updateProgress() {
+  const s = store.session;
+  const doneCount = s.index + (s.picked !== null ? 1 : 0);
+  const pct = Math.round(doneCount / s.queue.length * 100);
+  $("progress").firstElementChild.style.width = pct + "%";
+  $("progress").setAttribute("aria-valuenow", pct);
+  $("pos").textContent = Math.min(s.index + 1, s.queue.length);
+  $("total").textContent = s.queue.length;
+  $("pct").textContent = pct + "%";
+  $("correct-count").textContent = s.correct;
+  $("streak").textContent = s.streak;
+}
+
+function setNext(ready) {
+  const s = store.session;
+  const b = $("next");
+  b.disabled = !ready;
+  b.textContent = !ready ? "Choose an answer"
+    : s.index + 1 >= s.queue.length ? "Finish loop" : "Next question";
+}
+
+function answer(i) {
+  const s = store.session;
+  if (!s || s.picked !== null) return;
+  const q = byId.get(s.queue[s.index]);
+  s.picked = i;
+  s.answers++;
+  const right = s.order[i] === q.answer;
+  if (right) { s.correct++; s.streak++; }
+  else { s.wrongs.push(q.id); s.streak = 0; }
+  save();
+  paintAnswer(true);
+
+  const bar = $("progress");
+  bar.classList.remove("pulse"); void bar.offsetWidth; bar.classList.add("pulse");
+
+  if (right && store.prefs.autoAdvance) {
+    clearTimeout(advanceTimer);
+    advanceTimer = setTimeout(next, 700);
+  }
+}
+
+function paintAnswer(fresh) {
+  const s = store.session;
+  const q = byId.get(s.queue[s.index]);
+  const rightPos = s.order.indexOf(q.answer);
+  const correct = s.picked === rightPos;
+  [...$("options").querySelectorAll(".opt")].forEach((b, i) => {
+    b.disabled = true;
+    if (i === rightPos) b.classList.add("is-right");
+    else if (i === s.picked) b.classList.add("is-wrong");
+    else b.classList.add("is-dim");
+    if (i === s.picked && fresh) b.classList.add("picked");
+  });
+  const fb = $("feedback");
+  fb.className = "feedback " + (correct ? "ok" : "no");
+  fb.replaceChildren(...[
+    el("strong", null, correct ? "Correct" : "Not this one"),
+    correct ? null : document.createTextNode("Answer " + LETTERS[rightPos] + ": " + q.options[q.answer] + ". It comes back in the next loop.")
+  ].filter(Boolean));
+  fb.hidden = false;
+  updateProgress();
+  setNext(true);
+  if (fresh && !correct) $("next").focus({ preventScroll: true });
+}
+
+function next() {
+  clearTimeout(advanceTimer);
+  const s = store.session;
+  if (!s || s.phase !== "quiz" || s.picked === null) return;
+  s.index++;
+  s.picked = null;
+  s.orderFor = null;
+  if (s.index >= s.queue.length) endLoop();
+  else { save(); renderQuestion(); }
+}
+
+function endLoop() {
+  const s = store.session;
+  s.history.push({ size: s.queue.length, wrong: s.wrongs.length });
+  if (s.wrongs.length === 0) return complete();
+  s.phase = "summary";
+  save();
+  renderSummary();
+}
+
+function startNextLoop() {
+  const s = store.session;
+  s.queue = shuffle(s.wrongs);
+  s.wrongs = [];
+  s.index = 0;
+  s.correct = 0;
+  s.streak = 0;
+  s.loop++;
+  s.phase = "quiz";
+  s.orderFor = null;
+  s.picked = null;
+  save();
+  renderQuestion();
+}
+
+function chainNodes(history, pending) {
+  const nodes = [];
+  history.forEach((h, i) => {
+    if (i > 0) nodes.push(el("span", { class: "arrow" }, "→"));
+    nodes.push(el("span", { class: "node" + (i === 0 ? " first" : "") }, String(h.size)));
+  });
+  nodes.push(el("span", { class: "arrow" }, "→"));
+  nodes.push(pending
+    ? el("span", { class: "node next", title: "Next loop" }, String(pending))
+    : el("span", { class: "node zero", title: "Zero misses" }, "0 ✓"));
+  return nodes;
+}
+
+function renderSummary() {
+  const s = store.session;
+  const last = s.history[s.history.length - 1];
+  const got = last.size - last.wrong;
+  $("sum-tag").textContent = loopName(s, s.loop) + " complete";
+  $("sum-tag").classList.toggle("err", s.loop > 1);
+  $("sum-scope").textContent = scopeName(s);
+  $("sum-score").textContent = got + "/" + last.size;
+  $("sum-pct").textContent = Math.round(got / last.size * 100) + "% correct";
+  $("sum-chain").replaceChildren(...chainNodes(s.history, s.wrongs.length));
+  $("sum-text").textContent = s.wrongs.length === 1
+    ? "1 question left. The next loop is just that one."
+    : s.wrongs.length + " questions to fix. The next loop has only these, in a new order.";
+  $("sum-go").textContent = "Start " + loopName(s, s.loop + 1).toLowerCase() + " · " + s.wrongs.length + (s.wrongs.length === 1 ? " question" : " questions");
+  $("sum-missed").replaceChildren(...s.wrongs.map(id => {
+    const q = byId.get(id);
+    return el("li", null,
+      el("span", { class: "mw" }, q.week),
+      el("span", { class: "mq" }, q.question),
+      el("span", { class: "ma" }, q.options[q.answer])
+    );
+  }));
+  show("summary");
+}
+
+function complete() {
+  const s = store.session;
+  const first = s.history[0];
+  const record = {
+    mastered: true,
+    size: first.size,
+    firstTry: first.size - first.wrong,
+    loops: s.history.length,
+    answers: s.answers,
+    at: Date.now()
+  };
+  store.progress[progressKey(s)] = record;
+  store.session = null;
+  save();
+
+  $("done-title").textContent = s.scope === "grand" ? "All 130 memorised" : "Week " + s.week + " mastered";
+  $("done-chain").replaceChildren(...chainNodes(s.history, 0));
+  $("done-first").textContent = record.firstTry + "/" + record.size;
+  $("done-loops").textContent = record.loops;
+  $("done-answers").textContent = record.answers;
+
+  const doneWeeks = masteredWeeks();
+  const nextWeek = s.scope === "week"
+    ? WEEK_NUMS.find(w => w > s.week && !doneWeeks.includes(w)) ?? WEEK_NUMS.find(w => !doneWeeks.includes(w))
+    : undefined;
+  const nextBtn = $("done-next");
+  if (s.scope === "grand") {
+    $("done-text").textContent = "Every question answered correctly in its final loop. Run the Grand Test again before the exam to check it has stuck.";
+    nextBtn.textContent = "Run Grand Test again";
+    nextBtn.onclick = () => startSession("grand");
+  } else if (nextWeek !== undefined) {
+    $("done-text").textContent = doneWeeks.length + " of 13 weeks mastered. Keep the momentum while it is fresh.";
+    nextBtn.textContent = "Start Week " + nextWeek;
+    nextBtn.onclick = () => startSession("week", nextWeek);
+  } else {
+    $("done-text").textContent = "All 13 weeks mastered. The Grand Test is next: all 130 questions, fully shuffled.";
+    nextBtn.textContent = "Start Grand Test";
+    nextBtn.onclick = () => startSession("grand");
+  }
+  show("done");
+}
+
+function resume() {
+  const s = store.session;
+  if (!s) return;
+  if (s.phase === "summary") renderSummary();
+  else renderQuestion();
+}
+
+function exitToHome() {
+  clearTimeout(advanceTimer);
+  save();
+  renderHome();
+}
+
+/* ---------- wiring ---------- */
+$("next").addEventListener("click", next);
+$("exit").addEventListener("click", exitToHome);
+$("sum-exit").addEventListener("click", exitToHome);
+$("sum-go").addEventListener("click", startNextLoop);
+$("done-home").addEventListener("click", renderHome);
+$("grand-go").addEventListener("click", () => startSession("grand"));
+$("resume-go").addEventListener("click", resume);
+$("resume-drop").addEventListener("click", () => { store.session = null; save(); renderHome(); });
+$("opt-shuffle").addEventListener("change", e => { store.prefs.shuffleOptions = e.target.checked; save(); });
+$("opt-auto").addEventListener("change", e => { store.prefs.autoAdvance = e.target.checked; save(); });
+
+let resetArmed = null;
+$("reset").addEventListener("click", e => {
+  const b = e.currentTarget;
+  if (!resetArmed) {
+    b.textContent = "Tap again to erase everything";
+    resetArmed = setTimeout(() => { resetArmed = null; b.textContent = "Reset all progress"; }, 3000);
+    return;
+  }
+  clearTimeout(resetArmed); resetArmed = null;
+  b.textContent = "Reset all progress";
+  store.progress = {}; store.session = null; save(); renderHome();
+});
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (!$("quiz").hidden) {
+    const i = "1234".indexOf(k) >= 0 ? "1234".indexOf(k) : "abcd".indexOf(k);
+    if (k.length === 1 && i >= 0) { e.preventDefault(); answer(i); return; }
+    if ((k === "enter" || k === " " || k === "arrowright") && store.session && store.session.picked !== null) {
+      e.preventDefault(); next();
+    }
+  } else if (!$("summary").hidden && k === "enter" && document.activeElement === document.body) {
+    e.preventDefault(); startNextLoop();
+  }
+});
+
+renderHome();
+</script>
+</body>
+</html>
