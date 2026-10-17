@@ -28,13 +28,16 @@ Open `index.html` in any browser. There is nothing to install.
 - Each loop summary and each finished module lists the time you spent on every question, slowest first.
 - The home screen shows your **slowest questions** (the average of your last 3 attempts at each) and a button that drills the 20 slowest as their own module, with the same countdown and error loops.
 
-## Answer key phrases
+## Key phrases: question → answer
 
-Nothing is highlighted while you are answering. After you answer, the key phrase of the correct option is highlighted:
-the part that actually answers the question (for example "narrow habitat, food, or breeding conditions" for
-"Why do specialist species often decline earlier…"). The phrases are hand-picked for each of the 130 questions and stored in the `keys` field of each question.
-The same phrases are highlighted in the "Answer C: …" line and in the "Read these once before the loop" review list.
-After a correct answer the app waits 3 seconds before jumping to the next question. Highlighting can be turned off in settings.
+Nothing is highlighted while you are answering. After you answer, two things are highlighted:
+- the **cue words in the question**, the part that tells you what is being asked (for example "microclimate regulation"),
+- the **phrase in the correct option** that answers it (for example "Reducing heat stress" … "shade").
+
+This teaches the pairing: when the question says X, look for Y in the options. Both lists are hand-picked for all 130 questions.
+They are stored in each question's `qkeys` (question) and `keys` (correct option) fields.
+The same highlights appear in the look-back view and in the "Read these once before the loop" review list.
+After a correct answer the app waits 3 seconds before jumping on. Highlighting can be turned off in settings.
 
 ## Looking back
 
@@ -53,8 +56,8 @@ Keyboard: `1`–`4` or `A`–`D` to answer, `Enter` for the next question, `P` t
 The bank is the `const questions = [...]` array in `index.html`:
 
 ```js
-{ id: 1, week: "Week 0", question: "…", options: ["…", "…", "…", "…"], answer: 0, keys: ["…"] }
+{ id: 1, week: "Week 0", question: "…", options: ["…", "…", "…", "…"], answer: 0, qkeys: ["…"], keys: ["…"] }
 ```
 
-`answer` is the index of the correct option (0 = a). `keys` are exact phrases from the correct option to highlight after answering. Week 12 answers were unofficial when the study pack was made.
+`answer` is the index of the correct option (0 = a). `qkeys` are exact phrases from the question and `keys` exact phrases from the correct option, highlighted after answering. Week 12 answers were unofficial when the study pack was made.
 Check them against the NPTEL solution once it is released.
